@@ -89,13 +89,14 @@ function chartSvg(entries, unit) {
 $('exercises').addEventListener('click', e => {
   const li = e.target.closest('li[data-id]');
   if (!li) return;
+  stopTimer();
   currentId = li.dataset.id;
   $('date').value = today();
   render();
   scrollTo(0, 0);
 });
 
-$('back').addEventListener('click', () => { currentId = null; render(); });
+$('back').addEventListener('click', () => { stopTimer(); currentId = null; render(); });
 
 $('add-ex').addEventListener('click', () => { $('ex-name').value = ''; $('ex-dialog').showModal(); $('ex-name').focus(); });
 
@@ -132,8 +133,57 @@ $('delete-ex').addEventListener('click', () => {
   const ex = current();
   if (!ex || !confirm(`Delete "${ex.name}" and all its history?`)) return;
   state.exercises = state.exercises.filter(x => x.id !== ex.id);
+  stopTimer();
   currentId = null;
   save(); render();
+});
+
+// Timer: timestamp based, so it stays correct if the tab is throttled or backgrounded.
+const timer = { elapsed: 0, startedAt: null, tick: null };
+const timerMs = () => timer.elapsed + (timer.startedAt ? Date.now() - timer.startedAt : 0);
+
+function fmtTime(ms) {
+  const t = Math.floor(ms / 100), tenths = t % 10, sec = Math.floor(t / 10) % 60, min = Math.floor(t / 600);
+  return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${tenths}`;
+}
+
+// Converts the timer to the exercise's unit; null if the unit isn't a time unit.
+function timerValue(unit, ms) {
+  if (/^(s|sec|secs|second|seconds)$/i.test(unit)) return Math.round(ms / 1000);
+  if (/^(m|min|mins|minute|minutes)$/i.test(unit)) return Math.round(ms / 600) / 100;
+  return null;
+}
+
+function updateTimer() {
+  const ex = current(), ms = timerMs(), running = !!timer.startedAt;
+  $('timer-display').textContent = fmtTime(ms);
+  $('timer-toggle').textContent = running ? 'Pause' : ms ? 'Resume' : 'Start';
+  $('timer-use').hidden = !ex || running || !ms || timerValue(ex.unit, ms) === null;
+}
+
+function stopTimer() {
+  clearInterval(timer.tick);
+  timer.tick = null;
+  timer.elapsed = 0;
+  timer.startedAt = null;
+  updateTimer();
+}
+
+$('timer-toggle').addEventListener('click', () => {
+  if (timer.startedAt) {
+    timer.elapsed = timerMs();
+    timer.startedAt = null;
+    clearInterval(timer.tick);
+  } else {
+    timer.startedAt = Date.now();
+    timer.tick = setInterval(updateTimer, 100);
+  }
+  updateTimer();
+});
+$('timer-reset').addEventListener('click', stopTimer);
+$('timer-use').addEventListener('click', () => {
+  const v = timerValue(current().unit, timerMs());
+  if (v !== null) $('value').value = v;
 });
 
 render();

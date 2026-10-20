@@ -23,6 +23,15 @@
 </main>
 
 <main id="detail-view" hidden>
+  <section class="panel timer">
+    <div id="timer-display" aria-live="off">00:00.0</div>
+    <div class="timer-btns">
+      <button id="timer-toggle" class="primary" type="button">Start</button>
+      <button id="timer-reset" type="button">Reset</button>
+      <button id="timer-use" type="button" hidden>Use time</button>
+    </div>
+  </section>
+
   <section class="panel">
     <form id="entry-form">
       <label>Length (<span id="unit-label"></span>)

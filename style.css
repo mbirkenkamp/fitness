@@ -63,3 +63,8 @@ dialog::backdrop { background: rgba(0,0,0,.5); }
 dialog h2 { margin-top: 0; }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; padding: 0; margin: 12px 0 0; }
 dialog menu button:not(.primary) { background: none; border: 0; color: var(--muted); cursor: pointer; padding: 10px; }
+.timer { text-align: center; }
+#timer-display { font-size: 2.6rem; font-variant-numeric: tabular-nums; font-weight: 600; margin-bottom: 10px; }
+.timer-btns { display: flex; gap: 8px; justify-content: center; }
+.timer-btns button:not(.primary) { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 10px 16px; cursor: pointer; }
+.timer-btns button[hidden] { display: none; }

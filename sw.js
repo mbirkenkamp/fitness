@@ -1,4 +1,4 @@
-const CACHE = 'fitness-v1';
+const CACHE = 'fitness-v2';
 const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
