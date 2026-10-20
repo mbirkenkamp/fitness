@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Fitness Tracker</title>
+<meta name="theme-color" content="#0f766e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <button id="back" hidden aria-label="Back">‹</button>
+  <h1 id="title">Fitness Tracker</h1>
+  <button id="add-ex" aria-label="New exercise">＋</button>
+</header>
+
+<main id="list-view">
+  <ul id="exercises" class="cards"></ul>
+  <p id="empty" class="muted" hidden>No exercises yet. Tap ＋ to create one.</p>
+</main>
+
+<main id="detail-view" hidden>
+  <section class="panel">
+    <form id="entry-form">
+      <label>Length (<span id="unit-label"></span>)
+        <input id="value" type="number" inputmode="decimal" min="0" step="any" required>
+      </label>
+      <label>Date
+        <input id="date" type="date" required>
+      </label>
+      <fieldset>
+        <legend>How was the execution?</legend>
+        <label class="smiley"><input type="radio" name="rating" value="bad">😞</label>
+        <label class="smiley"><input type="radio" name="rating" value="mid" checked>😐</label>
+        <label class="smiley"><input type="radio" name="rating" value="good">😊</label>
+      </fieldset>
+      <button class="primary" type="submit">Save entry</button>
+    </form>
+  </section>
+
+  <section class="panel">
+    <div id="chart"></div>
+  </section>
+
+  <section class="panel">
+    <h2>History</h2>
+    <ul id="history" class="history"></ul>
+  </section>
+
+  <button id="delete-ex" class="danger">Delete exercise</button>
+</main>
+
+<dialog id="ex-dialog">
+  <form method="dialog" id="ex-form">
+    <h2>New exercise</h2>
+    <label>Name <input id="ex-name" required maxlength="40" placeholder="e.g. Plank"></label>
+    <label>Unit <input id="ex-unit" required maxlength="12" value="min" placeholder="min, sec, km, reps…"></label>
+    <menu>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" value="ok">Create</button>
+    </menu>
+  </form>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
