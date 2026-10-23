@@ -270,5 +270,22 @@ $('timer-reset').addEventListener('click', stopTimer);
 render();
 
 if ('serviceWorker' in navigator) {
-  addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
+  // Only reload for an update, not on the very first install (no previous controller).
+  let hadController = !!navigator.serviceWorker.controller, reloading = false;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (!hadController) { hadController = true; return; }
+    if (reloading || timer.startedAt) return; // never interrupt a running timer
+    reloading = true;
+    location.reload();
+  });
+
+  addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').then(reg => {
+      reg.update().catch(() => {});
+      // Installed PWAs stay alive in the background, so check again whenever the app comes back.
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') reg.update().catch(() => {});
+      });
+    }).catch(() => {});
+  });
 }
