@@ -183,13 +183,42 @@ function updateTimer() {
   $('timer-toggle').textContent = running ? 'Pause' : ms ? 'Resume' : 'Start';
 }
 
-// Short vibration each full 30 s while running (not supported on iOS Safari).
+// iOS has no vibration API, so there we fall back to a short beep and a flash of the display.
+let audioCtx = null;
+
+function unlockAudio() {
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    if (audioCtx.state === 'suspended') audioCtx.resume();
+  } catch (e) { audioCtx = null; }
+}
+
+function beep() {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator(), gain = audioCtx.createGain();
+  osc.frequency.value = 880;
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.25);
+  osc.connect(gain).connect(audioCtx.destination);
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.25);
+}
+
+function alertUser() {
+  if (navigator.vibrate) { navigator.vibrate(200); return; }
+  beep();
+  const el = $('timer-display');
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 400);
+}
+
+// Short alert each full 30 s while running.
 function tick() {
   updateTimer();
   const n = Math.floor(timerMs() / BUZZ_EVERY_MS);
   if (n > lastBuzz) {
     lastBuzz = n;
-    if (navigator.vibrate) navigator.vibrate(200);
+    alertUser();
   }
 }
 
@@ -228,6 +257,7 @@ $('timer-toggle').addEventListener('click', () => {
     clearInterval(timer.tick);
     releaseWakeLock();
   } else {
+    unlockAudio();
     timer.startedAt = Date.now();
     lastBuzz = Math.floor(timer.elapsed / BUZZ_EVERY_MS);
     timer.tick = setInterval(tick, 100);
