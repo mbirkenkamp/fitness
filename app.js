@@ -15,9 +15,22 @@ let currentId = null;
 function load() {
   try {
     const data = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (data && Array.isArray(data.exercises)) return data;
+    if (data && Array.isArray(data.exercises)) return migrate(data);
   } catch (e) { /* ignore corrupt or unavailable storage */ }
   return { exercises: [] };
+}
+
+// Exercises are either 'time' (stored in seconds) or 'reps'. Older data had a free-text unit.
+function migrate(data) {
+  for (const ex of data.exercises) {
+    if (ex.type) continue;
+    const mins = /^(m|min|mins|minute|minutes)$/i.test(ex.unit);
+    const secs = /^(s|sec|secs|second|seconds)$/i.test(ex.unit);
+    if (mins) ex.entries.forEach(e => { e.value = Math.round(e.value * 60); });
+    ex.type = mins || secs ? 'time' : 'reps';
+    ex.unit = ex.type === 'time' ? 'sec' : 'reps';
+  }
+  return data;
 }
 
 function save() {
@@ -50,7 +63,11 @@ function renderList() {
 }
 
 function renderDetail(ex) {
-  $('unit-label').textContent = ex.unit;
+  const isTime = ex.type === 'time';
+  $('timer-panel').hidden = !isTime;
+  $('time-hint').hidden = !isTime;
+  $('value-label').hidden = isTime;
+  $('value').required = !isTime;
   $('chart').innerHTML = chartSvg(sorted(ex), ex.unit);
   const rows = sorted(ex).reverse();
   $('history').innerHTML = rows.length ? rows.map(e => `<li>
@@ -102,23 +119,32 @@ $('add-ex').addEventListener('click', () => { $('ex-name').value = ''; $('ex-dia
 
 $('ex-dialog').addEventListener('close', () => {
   if ($('ex-dialog').returnValue !== 'ok') return;
-  const name = $('ex-name').value.trim(), unit = $('ex-unit').value.trim();
-  if (!name || !unit) return;
-  state.exercises.push({ id: uid(), name, unit, entries: [] });
+  const name = $('ex-name').value.trim(), type = $('ex-type').value;
+  if (!name) return;
+  state.exercises.push({ id: uid(), name, type, unit: type === 'time' ? 'sec' : 'reps', entries: [] });
   save(); render();
 });
 
 $('entry-form').addEventListener('submit', e => {
   e.preventDefault();
   const ex = current();
-  const value = parseFloat($('value').value);
-  if (!ex || !isFinite(value)) return;
+  let value;
+  if (!ex) return;
+  if (ex.type === 'time') {
+    value = Math.round(timerMs() / 1000);
+    if (value < 1) return alert('Run the timer first.');
+    if (timer.startedAt) return alert('Pause the timer before saving.');
+  } else {
+    value = parseInt($('value').value, 10);
+    if (!isFinite(value) || value < 1) return;
+  }
   ex.entries.push({
     id: uid(), ts: Date.now(), value, date: $('date').value || today(),
     rating: document.querySelector('input[name=rating]:checked').value,
   });
   save();
   $('value').value = '';
+  stopTimer();
   render();
 });
 
@@ -147,25 +173,51 @@ function fmtTime(ms) {
   return `${String(min).padStart(2, '0')}:${String(sec).padStart(2, '0')}.${tenths}`;
 }
 
-// Converts the timer to the exercise's unit; null if the unit isn't a time unit.
-function timerValue(unit, ms) {
-  if (/^(s|sec|secs|second|seconds)$/i.test(unit)) return Math.round(ms / 1000);
-  if (/^(m|min|mins|minute|minutes)$/i.test(unit)) return Math.round(ms / 600) / 100;
-  return null;
-}
+const BUZZ_EVERY_MS = 30000;
+let lastBuzz = 0;
+let wakeLock = null;
 
 function updateTimer() {
-  const ex = current(), ms = timerMs(), running = !!timer.startedAt;
+  const ms = timerMs(), running = !!timer.startedAt;
   $('timer-display').textContent = fmtTime(ms);
   $('timer-toggle').textContent = running ? 'Pause' : ms ? 'Resume' : 'Start';
-  $('timer-use').hidden = !ex || running || !ms || timerValue(ex.unit, ms) === null;
 }
+
+// Short vibration each full 30 s while running (not supported on iOS Safari).
+function tick() {
+  updateTimer();
+  const n = Math.floor(timerMs() / BUZZ_EVERY_MS);
+  if (n > lastBuzz) {
+    lastBuzz = n;
+    if (navigator.vibrate) navigator.vibrate(200);
+  }
+}
+
+async function acquireWakeLock() {
+  if (!('wakeLock' in navigator) || wakeLock) return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch (e) { /* denied or unsupported: timer still works */ }
+}
+
+function releaseWakeLock() {
+  if (wakeLock) wakeLock.release().catch(() => {});
+  wakeLock = null;
+}
+
+// The browser drops the lock when the page is hidden; take it again on return.
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && timer.startedAt) acquireWakeLock();
+});
 
 function stopTimer() {
   clearInterval(timer.tick);
   timer.tick = null;
   timer.elapsed = 0;
   timer.startedAt = null;
+  lastBuzz = 0;
+  releaseWakeLock();
   updateTimer();
 }
 
@@ -174,17 +226,16 @@ $('timer-toggle').addEventListener('click', () => {
     timer.elapsed = timerMs();
     timer.startedAt = null;
     clearInterval(timer.tick);
+    releaseWakeLock();
   } else {
     timer.startedAt = Date.now();
-    timer.tick = setInterval(updateTimer, 100);
+    lastBuzz = Math.floor(timer.elapsed / BUZZ_EVERY_MS);
+    timer.tick = setInterval(tick, 100);
+    acquireWakeLock();
   }
   updateTimer();
 });
 $('timer-reset').addEventListener('click', stopTimer);
-$('timer-use').addEventListener('click', () => {
-  const v = timerValue(current().unit, timerMs());
-  if (v !== null) $('value').value = v;
-});
 
 render();
 
