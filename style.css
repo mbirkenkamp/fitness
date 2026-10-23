@@ -68,3 +68,5 @@ dialog menu button:not(.primary) { background: none; border: 0; color: var(--mut
 .timer-btns { display: flex; gap: 8px; justify-content: center; }
 .timer-btns button:not(.primary) { background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 10px 16px; cursor: pointer; }
 [hidden] { display: none !important; }
+#timer-display.flash { color: var(--accent); }
+#timer-display { transition: color .2s; }

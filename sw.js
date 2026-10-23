@@ -1,4 +1,4 @@
-const CACHE = 'fitness-v3';
+const CACHE = 'fitness-v5';
 const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -15,9 +15,12 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   e.respondWith(
-    fetch(e.request).then(res => {
-      const copy = res.clone();
-      caches.open(CACHE).then(c => c.put(e.request, copy));
+    // no-cache revalidates with the server, so GitHub Pages' HTTP cache can't serve a stale file.
+    fetch(e.request, { cache: 'no-cache' }).then(res => {
+      if (res.ok) {
+        const copy = res.clone();
+        caches.open(CACHE).then(c => c.put(e.request, copy));
+      }
       return res;
     }).catch(() => caches.match(e.request).then(r => r || caches.match('index.html')))
   );
