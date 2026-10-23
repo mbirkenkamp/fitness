@@ -23,20 +23,20 @@
 </main>
 
 <main id="detail-view" hidden>
-  <section class="panel timer">
+  <section class="panel timer" id="timer-panel">
     <div id="timer-display" aria-live="off">00:00.0</div>
     <div class="timer-btns">
       <button id="timer-toggle" class="primary" type="button">Start</button>
       <button id="timer-reset" type="button">Reset</button>
-      <button id="timer-use" type="button" hidden>Use time</button>
     </div>
   </section>
 
   <section class="panel">
     <form id="entry-form">
-      <label>Length (<span id="unit-label"></span>)
-        <input id="value" type="number" inputmode="decimal" min="0" step="any" required>
+      <label id="value-label">Repetitions
+        <input id="value" type="number" inputmode="numeric" min="1" step="1">
       </label>
+      <p id="time-hint" class="muted" hidden>Stop the timer, then save. The recorded time is used.</p>
       <label>Date
         <input id="date" type="date" required>
       </label>
@@ -66,7 +66,12 @@
   <form method="dialog" id="ex-form">
     <h2>New exercise</h2>
     <label>Name <input id="ex-name" required maxlength="40" placeholder="e.g. Plank"></label>
-    <label>Unit <input id="ex-unit" required maxlength="12" value="min" placeholder="min, sec, km, reps…"></label>
+    <label>Type
+      <select id="ex-type">
+        <option value="time">Seconds (timer)</option>
+        <option value="reps">Repetitions</option>
+      </select>
+    </label>
     <menu>
       <button value="cancel" formnovalidate>Cancel</button>
       <button class="primary" value="ok">Create</button>
