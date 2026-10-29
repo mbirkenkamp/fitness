@@ -70,3 +70,7 @@ dialog menu button:not(.primary) { background: none; border: 0; color: var(--mut
 [hidden] { display: none !important; }
 #timer-display.flash { color: var(--accent); }
 #timer-display { transition: color .2s; }
+.data-panel .muted { text-align: left; margin: 0 0 10px; font-size: .85rem; }
+.data-btns { display: flex; gap: 8px; }
+.data-btns button { flex: 1; background: none; border: 1px solid var(--line); color: var(--text); border-radius: 8px; padding: 10px; cursor: pointer; }
+dialog menu button.danger-text { color: var(--bad); }
