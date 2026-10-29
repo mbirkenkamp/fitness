@@ -26,6 +26,13 @@
 </main>
 
 <main id="settings-view" hidden>
+  <section class="panel">
+    <h2>Intermittent fasting</h2>
+    <label class="toggle"><input type="checkbox" id="fast-enabled"> Enable fasting</label>
+    <div id="fast-schedule" hidden></div>
+    <p id="fast-hint" class="muted small" hidden>Set your eating window for each weekday. The header is green while you may eat and red while you fast. Outside the window counts as fasting, and a window over midnight (e.g. 20:00–02:00) works too. When you open the app you are asked how yesterday went.</p>
+  </section>
+
   <section class="panel data-panel">
     <h2>Backup</h2>
     <p class="muted">Your history only lives on this device. Export it now and then.</p>
@@ -38,6 +45,11 @@
 </main>
 
 <main id="detail-view" hidden>
+  <section class="panel" id="fast-panel" hidden>
+    <p id="fast-status"></p>
+    <button id="fast-edit" type="button" class="link">Edit schedule</button>
+  </section>
+
   <section class="panel timer" id="timer-panel">
     <div id="timer-display" aria-live="off">00:00.0</div>
     <div class="timer-btns">
@@ -91,6 +103,19 @@
       <button value="cancel" formnovalidate>Cancel</button>
       <button class="primary" value="ok">Create</button>
     </menu>
+  </form>
+</dialog>
+
+<dialog id="fast-dialog">
+  <form method="dialog">
+    <h2>Yesterday's fasting</h2>
+    <p>How well did you keep your fasting window on <strong id="fast-day"></strong>?</p>
+    <div class="rate-btns">
+      <button value="bad" aria-label="Bad">😞</button>
+      <button value="mid" aria-label="OK">😐</button>
+      <button value="good" aria-label="Good">😊</button>
+    </div>
+    <menu><button value="skip">Skip</button></menu>
   </form>
 </dialog>
 
