@@ -11,6 +11,7 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 
 let state = load();
 let currentId = null;
+let showSettings = false;
 
 function load() {
   try {
@@ -43,12 +44,18 @@ const sorted = ex => [...ex.entries].sort((a, b) => a.date.localeCompare(b.date)
 
 function render() {
   const ex = current();
-  $('list-view').hidden = !!ex;
+  const onList = !ex && !showSettings;
+  $('list-view').hidden = !onList;
+  $('settings-view').hidden = !showSettings;
   $('detail-view').hidden = !ex;
-  $('back').hidden = !ex;
-  $('add-ex').hidden = !!ex;
-  $('title').textContent = ex ? ex.name : 'Fitness Tracker';
-  ex ? renderDetail(ex) : renderList();
+  // The left button is the cog on the list and a back arrow everywhere else.
+  $('icon-cog').style.display = onList ? '' : 'none';
+  $('icon-back').hidden = onList;
+  $('nav').setAttribute('aria-label', onList ? 'Settings' : 'Back');
+  $('add-ex').hidden = !onList;
+  $('title').textContent = ex ? ex.name : showSettings ? 'Settings' : 'Fitness Tracker';
+  if (ex) renderDetail(ex);
+  else if (onList) renderList();
 }
 
 function renderList() {
@@ -113,7 +120,12 @@ $('exercises').addEventListener('click', e => {
   scrollTo(0, 0);
 });
 
-$('back').addEventListener('click', () => { stopTimer(); currentId = null; render(); });
+$('nav').addEventListener('click', () => {
+  if (current() || showSettings) { stopTimer(); currentId = null; showSettings = false; }
+  else showSettings = true;
+  render();
+  scrollTo(0, 0);
+});
 
 $('add-ex').addEventListener('click', () => { $('ex-name').value = ''; $('ex-dialog').showModal(); $('ex-name').focus(); });
 

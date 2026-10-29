@@ -12,7 +12,10 @@
 </head>
 <body>
 <header>
-  <button id="back" hidden aria-label="Back">‹</button>
+  <button id="nav" aria-label="Settings">
+    <svg id="icon-cog" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/><circle cx="12" cy="12" r="7"/></svg>
+    <span id="icon-back" hidden>‹</span>
+  </button>
   <h1 id="title">Fitness Tracker</h1>
   <button id="add-ex" aria-label="New exercise">＋</button>
 </header>
@@ -20,6 +23,9 @@
 <main id="list-view">
   <ul id="exercises" class="cards"></ul>
   <p id="empty" class="muted" hidden>No exercises yet. Tap ＋ to create one.</p>
+</main>
+
+<main id="settings-view" hidden>
   <section class="panel data-panel">
     <h2>Backup</h2>
     <p class="muted">Your history only lives on this device. Export it now and then.</p>
