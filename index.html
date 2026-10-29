@@ -20,6 +20,15 @@
 <main id="list-view">
   <ul id="exercises" class="cards"></ul>
   <p id="empty" class="muted" hidden>No exercises yet. Tap ＋ to create one.</p>
+  <section class="panel data-panel">
+    <h2>Backup</h2>
+    <p class="muted">Your history only lives on this device. Export it now and then.</p>
+    <div class="data-btns">
+      <button id="export-btn" type="button">Export</button>
+      <button id="import-btn" type="button">Import</button>
+    </div>
+    <input id="import-file" type="file" accept="application/json,.json" hidden>
+  </section>
 </main>
 
 <main id="detail-view" hidden>
@@ -75,6 +84,19 @@
     <menu>
       <button value="cancel" formnovalidate>Cancel</button>
       <button class="primary" value="ok">Create</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="import-dialog">
+  <form method="dialog">
+    <h2>Import data</h2>
+    <p id="import-summary"></p>
+    <p class="muted"><strong>Merge</strong> adds what is missing and keeps your current data. <strong>Replace</strong> deletes all current data first.</p>
+    <menu>
+      <button value="cancel">Cancel</button>
+      <button value="replace" class="danger-text">Replace</button>
+      <button class="primary" value="merge">Merge</button>
     </menu>
   </form>
 </dialog>

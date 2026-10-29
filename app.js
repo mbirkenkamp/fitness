@@ -155,6 +155,90 @@ $('history').addEventListener('click', e => {
   save(); render();
 });
 
+// ---- Export / import -------------------------------------------------------
+const EXPORT_VERSION = 1;
+const RATINGS = ['bad', 'mid', 'good'];
+
+function exportJson() {
+  return JSON.stringify({ app: 'fitness-tracker', version: EXPORT_VERSION, exportedAt: new Date().toISOString(), exercises: state.exercises }, null, 2);
+}
+
+$('export-btn').addEventListener('click', async () => {
+  const file = new File([exportJson()], `fitness-backup-${today()}.json`, { type: 'application/json' });
+  // The share sheet is the easy way out of an installed iOS PWA; elsewhere just download.
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Fitness backup' }); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(file);
+  const a = Object.assign(document.createElement('a'), { href: url, download: file.name });
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+// Returns a clean copy of the imported exercises or throws with a readable message.
+function parseImport(text) {
+  let data;
+  try { data = JSON.parse(text); } catch (e) { throw new Error('This is not a valid JSON file.'); }
+  if (!data || data.app !== 'fitness-tracker' || !Array.isArray(data.exercises)) throw new Error('This file is not a fitness backup.');
+  if (data.version > EXPORT_VERSION) throw new Error('This backup was made by a newer version of the app. Please update first.');
+  return migrate({ exercises: data.exercises.map((ex, i) => {
+    const where = `Exercise ${i + 1}`;
+    if (!ex || typeof ex.id !== 'string' || typeof ex.name !== 'string' || !ex.name.trim()) throw new Error(`${where} is invalid.`);
+    if (ex.type !== undefined && ex.type !== 'time' && ex.type !== 'reps') throw new Error(`${where} has an unknown type.`);
+    if (!Array.isArray(ex.entries)) throw new Error(`${where} has no entries list.`);
+    const entries = ex.entries.map(e => {
+      if (!e || typeof e.id !== 'string' || !isFinite(e.value) || !RATINGS.includes(e.rating) || !/^\d{4}-\d{2}-\d{2}$/.test(e.date))
+        throw new Error(`${where} ("${ex.name}") contains an invalid entry.`);
+      return { id: e.id, ts: Number(e.ts) || 0, value: Number(e.value), date: e.date, rating: e.rating };
+    });
+    return { id: ex.id, name: ex.name.trim().slice(0, 40), type: ex.type, unit: ex.unit || '', entries };
+  }) }).exercises;
+}
+
+function mergeExercises(incoming) {
+  let addedEx = 0, addedEntries = 0;
+  for (const inc of incoming) {
+    const own = state.exercises.find(x => x.id === inc.id);
+    if (!own) { state.exercises.push(inc); addedEx++; addedEntries += inc.entries.length; continue; }
+    const ids = new Set(own.entries.map(e => e.id));
+    for (const e of inc.entries) if (!ids.has(e.id)) { own.entries.push(e); addedEntries++; }
+  }
+  return { addedEx, addedEntries };
+}
+
+let pendingImport = null;
+
+$('import-btn').addEventListener('click', () => $('import-file').click());
+
+$('import-file').addEventListener('change', async () => {
+  const input = $('import-file'), file = input.files[0];
+  input.value = '';
+  if (!file) return;
+  try {
+    pendingImport = parseImport(await file.text());
+  } catch (e) { return alert(e.message); }
+  const n = pendingImport.reduce((sum, ex) => sum + ex.entries.length, 0);
+  $('import-summary').textContent = `${pendingImport.length} exercise(s) with ${n} entries found.`;
+  $('import-dialog').showModal();
+});
+
+$('import-dialog').addEventListener('close', () => {
+  const choice = $('import-dialog').returnValue, incoming = pendingImport;
+  pendingImport = null;
+  if (!incoming || (choice !== 'merge' && choice !== 'replace')) return;
+  if (choice === 'replace') {
+    state.exercises = incoming;
+    alert(`Imported ${incoming.length} exercise(s).`);
+  } else {
+    const { addedEx, addedEntries } = mergeExercises(incoming);
+    alert(`Added ${addedEx} exercise(s) and ${addedEntries} entries.`);
+  }
+  save(); render();
+});
+
 $('delete-ex').addEventListener('click', () => {
   const ex = current();
   if (!ex || !confirm(`Delete "${ex.name}" and all its history?`)) return;
