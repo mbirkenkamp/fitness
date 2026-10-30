@@ -1,4 +1,4 @@
-const CACHE = 'fitness-v8';
+const CACHE = 'fitness-v9';
 const ASSETS = ['./', 'index.html', 'style.css', 'app.js', 'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', e => {
@@ -13,7 +13,7 @@ self.addEventListener('activate', e => {
 
 // Network first so updates show up, cache fallback for offline use.
 self.addEventListener('fetch', e => {
-  if (e.request.method !== 'GET') return;
+  if (e.request.method !== 'GET' || new URL(e.request.url).origin !== location.origin) return; // leave API calls alone
   e.respondWith(
     // no-cache revalidates with the server, so GitHub Pages' HTTP cache can't serve a stale file.
     fetch(e.request, { cache: 'no-cache' }).then(res => {
