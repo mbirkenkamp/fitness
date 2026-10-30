@@ -99,6 +99,17 @@
     </form>
   </section>
 
+  <section class="panel" id="streak-panel">
+    <div class="stats">
+      <div class="stat"><b id="st-cur">0</b><span>current streak</span></div>
+      <div class="stat"><b id="st-best">0</b><span>longest streak</span></div>
+      <div class="stat"><b id="st-total">0</b><span>days in total</span></div>
+    </div>
+    <div class="heat" id="heat" aria-label="Last 16 weeks"></div>
+    <div class="months" id="heat-months"></div>
+    <div class="legend"><span class="g">good</span><span class="m">ok</span><span class="b">bad</span><span>no entry</span></div>
+  </section>
+
   <section class="panel">
     <div id="chart"></div>
   </section>
@@ -176,6 +187,9 @@
     </menu>
   </form>
 </dialog>
+
+<canvas id="fx"></canvas>
+<div id="msg" role="status"></div>
 
 <script src="app.js"></script>
 </body>
