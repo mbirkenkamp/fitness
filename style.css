@@ -120,3 +120,32 @@ dialog menu button.danger-text { color: var(--bad); }
 .two { display: flex; gap: 8px; }
 .two label { flex: 1; }
 #food-preview { text-align: left; margin: 0; font-size: .9rem; }
+
+#streak-panel .stats { display: flex; text-align: center; }
+#streak-panel .stat { flex: 1; }
+#streak-panel .stat b { display: block; font-size: 1.3rem; }
+#streak-panel .stat span { font-size: .72rem; color: var(--muted); }
+.heat { display: grid; grid-auto-flow: column; grid-template-rows: repeat(7, 1fr); gap: 3px; margin-top: 12px; }
+.heat i { aspect-ratio: 1; border-radius: 3px; background: var(--line); display: block; }
+.heat i.good { background: var(--good); }
+.heat i.mid { background: var(--mid); }
+.heat i.bad { background: var(--bad); }
+.heat i.future { opacity: .35; }
+.heat i.today { outline: 2px solid var(--accent); outline-offset: 1px; }
+.months { display: grid; grid-template-columns: repeat(16, 1fr); gap: 3px; font-size: .68rem; color: var(--muted); margin-top: 3px; height: 1em; }
+.months span { white-space: nowrap; }
+.legend { display: flex; gap: 10px; font-size: .72rem; color: var(--muted); margin-top: 8px; }
+.legend span::before { content: ""; display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 4px; background: var(--line); }
+.legend .g::before { background: var(--good); }
+.legend .m::before { background: var(--mid); }
+.legend .b::before { background: var(--bad); }
+#fx { position: fixed; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 20; }
+#msg { position: fixed; left: 50%; top: 42%; z-index: 21; transform: translate(-50%, -50%) scale(.6); opacity: 0; visibility: hidden; text-align: center; background: var(--card); border-radius: 20px; padding: 22px 30px; box-shadow: 0 16px 48px rgba(0,0,0,.35); min-width: 240px; max-width: 86vw; cursor: pointer; }
+#msg.on { visibility: visible; animation: pop .5s cubic-bezier(.2,1.4,.4,1) forwards; }
+#msg.off { visibility: hidden; pointer-events: none; opacity: 0; transform: translate(-50%, -50%) scale(.9); transition: opacity .4s, transform .4s, visibility 0s linear .4s; }
+@keyframes pop { to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
+#msg .e { font-size: 3rem; line-height: 1; }
+#msg .num { font-size: 3.2rem; font-weight: 800; color: #ea580c; line-height: 1.1; }
+#msg .t { font-weight: 600; }
+#msg .s { color: var(--muted); font-size: .85rem; margin-top: 2px; }
+@media (prefers-reduced-motion: reduce) { #msg.on { animation: none; opacity: 1; transform: translate(-50%, -50%); } }

@@ -109,6 +109,8 @@ function renderDetail(ex) {
   $('entry-form').parentElement.hidden = isFasting;
   $('delete-ex').hidden = isFasting;
   $('fast-panel').hidden = !isFasting;
+  $('streak-panel').hidden = isFasting;
+  if (!isFasting) renderStreaks(ex.entries);
   if (isFasting) $('fast-status').textContent = fastingStatus();
   $('chart').innerHTML = chartSvg(sorted(ex), ex.unit, isFasting ? FASTING_SCALE : null);
   const rows = sorted(ex).reverse();
@@ -192,14 +194,18 @@ $('entry-form').addEventListener('submit', e => {
     value = parseInt($('value').value, 10);
     if (!isFinite(value) || value < 1) return;
   }
+  const before = streakStats(ex.entries).current;
   ex.entries.push({
     id: uid(), ts: Date.now(), value, date: $('date').value || today(),
     rating: document.querySelector('input[name=rating]:checked').value,
   });
+  const after = streakStats(ex.entries).current;
   save();
   $('value').value = '';
   stopTimer();
   render();
+  const reached = MILESTONES.filter(m => before < m.days && after >= m.days).pop();
+  if (reached) celebrate(reached, ex.name);
 });
 
 $('history').addEventListener('click', e => {
@@ -562,6 +568,115 @@ $('food-dialog').addEventListener('close', () => {
   state.food.items.push({ id: uid(), ts: Date.now(), date: foodDate, meal: foodMeal, name: name.slice(0, 80), grams, kcal: Math.round(k100 * grams / 100) });
   save(); render();
 });
+
+// ---- Streaks and milestones --------------------------------------------------
+// A day counts when the exercise was logged at least once; one missed day breaks the streak.
+const MILESTONES = [
+  { days: 7, title: 'One week!', n: 20 }, { days: 14, title: 'Two weeks!', n: 30 }, { days: 30, title: 'One month!', n: 43 },
+  { days: 90, title: 'Three months!', n: 63 }, { days: 180, title: 'Half a year!', n: 87 }, { days: 365, title: 'One year!', n: 120 },
+];
+const dayNum = d => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5);
+
+function streakStats(entries, now = today()) {
+  const set = new Set(entries.map(e => dayNum(e.date))), days = [...set].sort((a, b) => a - b);
+  let longest = 0, run = 0, prev = null;
+  for (const d of days) {
+    run = prev !== null && d === prev + 1 ? run + 1 : 1;
+    prev = d;
+    longest = Math.max(longest, run);
+  }
+  // The streak stays alive today until the day is over, so it may end yesterday.
+  const t = dayNum(now);
+  let current = 0, d = set.has(t) ? t : t - 1;
+  while (set.has(d)) { current++; d--; }
+  return { current, longest, total: days.length };
+}
+
+const HEAT_WEEKS = 16;
+
+function renderStreaks(entries) {
+  const st = streakStats(entries);
+  $('st-cur').textContent = st.current ? `🔥 ${st.current}` : '0';
+  $('st-best').textContent = st.longest;
+  $('st-total').textContent = st.total;
+
+  const rank = { bad: 1, mid: 2, good: 3 }, byDay = {};
+  for (const e of entries) {
+    const day = byDay[e.date] || (byDay[e.date] = { best: e.rating });
+    if (rank[e.rating] > rank[day.best]) day.best = e.rating; // a day shows its best rating
+  }
+  const now = new Date(), t = today();
+  const start = new Date(now);
+  start.setDate(now.getDate() - (now.getDay() + 6) % 7 - (HEAT_WEEKS - 1) * 7); // Monday, 16 weeks back
+  let cells = '', months = [], lastMonth = -1;
+  for (let i = 0; i < HEAT_WEEKS * 7; i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate() + i);
+    const ds = dateStr(d), day = byDay[ds];
+    if (i % 7 === 0 && d.getMonth() !== lastMonth) { months.push({ col: i / 7, label: d.toLocaleDateString(undefined, { month: 'short' }) }); lastMonth = d.getMonth(); }
+    const cls = [day ? day.best : '', ds > t ? 'future' : '', ds === t ? 'today' : ''].filter(Boolean).join(' ');
+    cells += `<i class="${cls}" title="${ds}${day ? ` · ${FACES[day.best]}` : ''}"></i>`;
+  }
+  $('heat').innerHTML = cells;
+  // Skip a first label that would run into the next one.
+  if (months.length > 1 && months[1].col < 3) months.shift();
+  $('heat-months').innerHTML = months.map(m => `<span style="grid-column:${m.col + 1}">${m.label}</span>`).join('');
+}
+
+// -- milestone celebration: an emoji fountain plus a card
+const fx = { raf: null, timer: null };
+
+function stopCelebration() {
+  cancelAnimationFrame(fx.raf);
+  clearTimeout(fx.timer);
+  fx.raf = fx.timer = null;
+  const cv = $('fx');
+  cv.getContext('2d').clearRect(0, 0, cv.width, cv.height);
+  if ($('msg').classList.contains('on')) $('msg').className = 'off';
+}
+
+function celebrate(m, exName) {
+  stopCelebration();
+  const msg = $('msg');
+  msg.innerHTML = `<div class="e">🔥</div><div class="num">${m.days}</div><div class="t">days in a row – ${m.title}</div><div class="s">${esc(exName)}</div>`;
+  msg.className = '';
+  void msg.offsetWidth; // restart the pop-in animation
+  msg.className = 'on';
+  fx.timer = setTimeout(stopCelebration, 4800);
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return; // card only, no movement
+
+  const cv = $('fx'), ctx = cv.getContext('2d'), dpr = devicePixelRatio || 1, W = innerWidth, H = innerHeight;
+  cv.width = W * dpr; cv.height = H * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const rnd = (a, b) => a + Math.random() * (b - a), EMOJI = ['🔥', '🏆', '🎉', '💪', '⭐', '🔥'];
+  const parts = [], total = m.n, dur = 1600;
+  let spawned = 0, last = performance.now();
+  const t0 = last;
+  const frame = now => {
+    const dt = Math.min(now - last, 50) / 16.67;
+    last = now;
+    ctx.clearRect(0, 0, W, H);
+    const want = Math.min(total, Math.floor(total * Math.min((now - t0) / dur, 1)));
+    while (spawned < want) {
+      spawned++;
+      parts.push({ x: W / 2 + rnd(-20, 20), y: H + 20, vx: rnd(-5, 5) * (W < 600 ? .8 : 1.4), vy: -rnd(12, 20) * (H < 700 ? .85 : 1),
+        rot: rnd(-.5, .5), vr: rnd(-.08, .08), size: rnd(24, 46), e: EMOJI[Math.floor(Math.random() * EMOJI.length)] });
+    }
+    for (let i = parts.length - 1; i >= 0; i--) {
+      const p = parts[i];
+      p.vy += .3 * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.rot += p.vr * dt;
+      if (p.y > H + 60 && p.vy > 0) { parts.splice(i, 1); continue; }
+      ctx.save();
+      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
+      ctx.font = `${p.size}px serif`; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(p.e, 0, 0);
+      ctx.restore();
+    }
+    if (parts.length || spawned < total) fx.raf = requestAnimationFrame(frame);
+  };
+  fx.raf = requestAnimationFrame(frame);
+}
+$('msg').addEventListener('click', stopCelebration);
 
 // ---- Export / import -------------------------------------------------------
 const EXPORT_VERSION = 1;
