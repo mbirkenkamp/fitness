@@ -33,6 +33,12 @@
     <p id="fast-hint" class="muted small" hidden>Set your eating window for each weekday. The header is green while you may eat and red while you fast. Outside the window counts as fasting, and a window over midnight (e.g. 20:00–02:00) works too. When you open the app you are asked how yesterday went.</p>
   </section>
 
+  <section class="panel">
+    <h2>Calorie tracking <span class="badge">beta</span></h2>
+    <label class="toggle"><input type="checkbox" id="food-enabled"> Enable calorie tracking</label>
+    <p class="muted small">Log food for breakfast, lunch, dinner and snacks. Product and barcode search uses the free Open Food Facts database; the text you search for is sent to openfoodfacts.org. Everything you log stays on this device.</p>
+  </section>
+
   <section class="panel data-panel">
     <h2>Backup</h2>
     <p class="muted">Your history only lives on this device. Export it now and then.</p>
@@ -41,6 +47,22 @@
       <button id="import-btn" type="button">Import</button>
     </div>
     <input id="import-file" type="file" accept="application/json,.json" hidden>
+  </section>
+</main>
+
+<main id="food-view" hidden>
+  <section class="panel">
+    <div class="datebar">
+      <button id="food-prev" type="button" aria-label="Previous day">‹</button>
+      <strong id="food-date"></strong>
+      <button id="food-next" type="button" aria-label="Next day">›</button>
+    </div>
+    <div id="food-total"></div>
+  </section>
+  <div id="meals"></div>
+  <section class="panel">
+    <h2>Calories per day</h2>
+    <div id="food-chart"></div>
   </section>
 </main>
 
@@ -102,6 +124,29 @@
     <menu>
       <button value="cancel" formnovalidate>Cancel</button>
       <button class="primary" value="ok">Create</button>
+    </menu>
+  </form>
+</dialog>
+
+<dialog id="food-dialog">
+  <form method="dialog" id="food-form">
+    <h2 id="food-dialog-title">Add food</h2>
+    <div class="searchrow">
+      <input id="food-q" type="search" placeholder="Search product or barcode" autocomplete="off">
+      <button id="food-search" type="button">Search</button>
+      <button id="food-scan" type="button" hidden>Scan</button>
+    </div>
+    <video id="scan-video" playsinline muted hidden></video>
+    <ul id="food-results" class="results"></ul>
+    <label>Name <input id="food-name" required maxlength="80"></label>
+    <div class="two">
+      <label>Amount (g) <input id="food-grams" type="number" inputmode="decimal" min="0.1" step="any" value="100" required></label>
+      <label>kcal per 100 g <input id="food-kcal100" type="number" inputmode="decimal" min="0" step="any" required></label>
+    </div>
+    <p id="food-preview" class="muted"></p>
+    <menu>
+      <button value="cancel" formnovalidate>Cancel</button>
+      <button class="primary" value="ok">Add</button>
     </menu>
   </form>
 </dialog>
