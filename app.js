@@ -116,7 +116,7 @@ function renderDetail(ex) {
   $('delete-ex').hidden = isFasting;
   $('fast-panel').hidden = !isFasting;
   $('streak-panel').hidden = isFasting;
-  if (!isFasting) renderStreaks(ex.entries);
+  if (!isFasting) renderStreaks(ex);
   if (isFasting) $('fast-status').textContent = fastingStatus();
   $('chart').innerHTML = chartSvg(sorted(ex), unitLabel(ex.unit), isFasting ? FASTING_SCALE : null);
   const rows = sorted(ex).reverse();
@@ -593,7 +593,65 @@ function streakStats(entries, now = today()) {
 
 const HEAT_WEEKS = 16;
 
-function renderStreaks(entries) {
+// -- weekly goal: "train on at least N different days per calendar week (Mon-Sun)"
+const goalOf = ex => (Number.isInteger(ex.weeklyGoal) && ex.weeklyGoal >= 1 && ex.weeklyGoal <= 7 ? ex.weeklyGoal : null);
+const weekOf = dayNumber => Math.floor((dayNumber + 3) / 7); // 1970-01-01 was a Thursday, so +3 aligns weeks to Monday
+
+function weeklyStats(entries, goal, now = today()) {
+  const perWeek = new Map();
+  for (const e of entries) {
+    const d = dayNum(e.date), w = weekOf(d);
+    if (!perWeek.has(w)) perWeek.set(w, new Set());
+    perWeek.get(w).add(d);
+  }
+  const count = w => (perWeek.has(w) ? perWeek.get(w).size : 0);
+  const thisWeek = weekOf(dayNum(now));
+  // The running week is still open: it only counts once the goal is met, otherwise the streak ends last week.
+  let current = 0, w = count(thisWeek) >= goal ? thisWeek : thisWeek - 1;
+  while (count(w) >= goal) { current++; w--; }
+  let best = 0, run = 0, prev = null;
+  for (const wk of [...perWeek.keys()].sort((a, b) => a - b)) {
+    if (count(wk) < goal) { run = 0; prev = null; continue; }
+    run = prev !== null && wk === prev + 1 ? run + 1 : 1;
+    prev = wk;
+    best = Math.max(best, run);
+  }
+  const recent = [];
+  for (let i = 7; i >= 0; i--) recent.push({ n: count(thisWeek - i), current: i === 0 });
+  return { count: count(thisWeek), current, best, recent };
+}
+
+function renderGoal(ex) {
+  const goal = goalOf(ex);
+  $('goal-select').innerHTML = `<option value="">${esc(t('goal.off'))}</option>`
+    + [1, 2, 3, 4, 5, 6, 7].map(n => `<option value="${n}">${esc(t('goal.option', { n }))}</option>`).join('');
+  $('goal-select').value = goal ? String(goal) : '';
+  $('goal-body').hidden = !goal;
+  if (!goal) return;
+  const ws = weeklyStats(ex.entries, goal), met = ws.count >= goal;
+  $('ring-num').textContent = `${Math.min(ws.count, 99)}/${goal}`;
+  $('ring-fg').style.strokeDasharray = `${264 * Math.min(ws.count / goal, 1)} 264`;
+  $('ring-fg').classList.toggle('met', met);
+  $('goal-line').textContent = t('goal.option', { n: goal });
+  $('goal-sub').textContent = met ? t('goal.reached') : t('goal.remaining', { n: goal - ws.count });
+  $('goal-streak').textContent = `${ws.current ? '🔥 ' : ''}${t('goal.weeks', { n: ws.current })} · ${t('goal.best', { n: ws.best })}`;
+  $('goal-weeks').innerHTML = ws.recent.map(r => {
+    const cls = [r.n >= goal ? 'met' : '', r.current ? 'cur' : ''].filter(Boolean).join(' ');
+    return `<div class="${cls}" style="height:${Math.round(Math.min(r.n / goal, 1) * 100)}%" title="${r.n}/${goal}"></div>`;
+  }).join('');
+}
+
+$('goal-select').addEventListener('change', e => {
+  const ex = current();
+  if (!ex) return;
+  ex.weeklyGoal = e.target.value ? parseInt(e.target.value, 10) : null;
+  save();
+  render();
+});
+
+function renderStreaks(ex) {
+  const entries = ex.entries;
+  renderGoal(ex);
   const st = streakStats(entries);
   $('st-cur').textContent = st.current ? `🔥 ${st.current}` : '0';
   $('st-best').textContent = st.longest;
@@ -715,7 +773,7 @@ function parseImport(text) {
         throw new Error(t('imp.err.entry', { where, name: ex.name }));
       return { id: e.id, ts: Number(e.ts) || 0, value: Number(e.value), date: e.date, rating: e.rating };
     });
-    return { id: ex.id, name: ex.name.trim().slice(0, 40), type: ex.type, unit: ex.unit || '', entries };
+    return { id: ex.id, name: ex.name.trim().slice(0, 40), type: ex.type, unit: ex.unit || '', weeklyGoal: goalOf(ex), entries };
   }) }).exercises;
   return {
     exercises,
