@@ -12,39 +12,48 @@
 </head>
 <body>
 <header>
-  <button id="nav" aria-label="Settings">
+  <button id="nav" aria-label="Settings" data-i18n-attr="aria-label:nav.settings">
     <svg id="icon-cog" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/><circle cx="12" cy="12" r="7"/></svg>
     <span id="icon-back" hidden>‹</span>
   </button>
   <h1 id="title">Fitness Tracker</h1>
-  <button id="add-ex" aria-label="New exercise">＋</button>
+  <button id="add-ex" aria-label="New exercise" data-i18n-attr="aria-label:exercise.new">＋</button>
 </header>
 
 <main id="list-view">
   <ul id="exercises" class="cards"></ul>
-  <p id="empty" class="muted" hidden>No exercises yet. Tap ＋ to create one.</p>
+  <p id="empty" class="muted" hidden data-i18n="list.empty">No exercises yet. Tap ＋ to create one.</p>
 </main>
 
 <main id="settings-view" hidden>
   <section class="panel">
-    <h2>Intermittent fasting</h2>
-    <label class="toggle"><input type="checkbox" id="fast-enabled"> Enable fasting</label>
-    <div id="fast-schedule" hidden></div>
-    <p id="fast-hint" class="muted small" hidden>Set your eating window for each weekday. The header is green while you may eat and red while you fast. Outside the window counts as fasting, and a window over midnight (e.g. 20:00–02:00) works too. When you open the app you are asked how yesterday went.</p>
+    <h2 data-i18n="lang.title">Language</h2>
+    <select id="lang-select" aria-label="Language" data-i18n-attr="aria-label:lang.title">
+      <option value="auto" data-i18n="lang.auto">Automatic (device language)</option>
+      <option value="de" data-i18n="lang.de">Deutsch</option>
+      <option value="en" data-i18n="lang.en">English</option>
+    </select>
   </section>
 
   <section class="panel">
-    <h2>Calorie tracking <span class="badge">beta</span></h2>
-    <label class="toggle"><input type="checkbox" id="food-enabled"> Enable calorie tracking</label>
-    <p class="muted small">Log food for breakfast, lunch, dinner and snacks. Product and barcode search uses the free Open Food Facts database; the text you search for is sent to openfoodfacts.org. Everything you log stays on this device.</p>
+    <h2 data-i18n="fast.title">Intermittent fasting</h2>
+    <label class="toggle"><input type="checkbox" id="fast-enabled"> <span data-i18n="fast.enable">Enable fasting</span></label>
+    <div id="fast-schedule" hidden></div>
+    <p id="fast-hint" class="muted small" hidden data-i18n="fast.hint">Set your eating window for each weekday. The header is green while you may eat and red while you fast. Outside the window counts as fasting, and a window over midnight (e.g. 20:00–02:00) works too. When you open the app you are asked how yesterday went.</p>
+  </section>
+
+  <section class="panel">
+    <h2><span data-i18n="food.title">Calorie tracking</span> <span class="badge">beta</span></h2>
+    <label class="toggle"><input type="checkbox" id="food-enabled"> <span data-i18n="food.enable">Enable calorie tracking</span></label>
+    <p class="muted small" data-i18n="food.hint">Log food for breakfast, lunch, dinner and snacks. Product and barcode search uses the free Open Food Facts database; the text you search for is sent to openfoodfacts.org. Everything you log stays on this device.</p>
   </section>
 
   <section class="panel data-panel">
-    <h2>Backup</h2>
-    <p class="muted">Your history only lives on this device. Export it now and then.</p>
+    <h2 data-i18n="backup.title">Backup</h2>
+    <p class="muted" data-i18n="backup.text">Your history only lives on this device. Export it now and then.</p>
     <div class="data-btns">
-      <button id="export-btn" type="button">Export</button>
-      <button id="import-btn" type="button">Import</button>
+      <button id="export-btn" type="button" data-i18n="backup.export">Export</button>
+      <button id="import-btn" type="button" data-i18n="backup.import">Import</button>
     </div>
     <input id="import-file" type="file" accept="application/json,.json" hidden>
   </section>
@@ -53,15 +62,15 @@
 <main id="food-view" hidden>
   <section class="panel">
     <div class="datebar">
-      <button id="food-prev" type="button" aria-label="Previous day">‹</button>
+      <button id="food-prev" type="button" aria-label="Previous day" data-i18n-attr="aria-label:food.prevDay">‹</button>
       <strong id="food-date"></strong>
-      <button id="food-next" type="button" aria-label="Next day">›</button>
+      <button id="food-next" type="button" aria-label="Next day" data-i18n-attr="aria-label:food.nextDay">›</button>
     </div>
     <div id="food-total"></div>
   </section>
   <div id="meals"></div>
   <section class="panel">
-    <h2>Calories per day</h2>
+    <h2 data-i18n="food.perDay">Calories per day</h2>
     <div id="food-chart"></div>
   </section>
 </main>
@@ -69,45 +78,45 @@
 <main id="detail-view" hidden>
   <section class="panel" id="fast-panel" hidden>
     <p id="fast-status"></p>
-    <button id="fast-edit" type="button" class="link">Edit schedule</button>
+    <button id="fast-edit" type="button" class="link" data-i18n="fast.edit">Edit schedule</button>
   </section>
 
   <section class="panel timer" id="timer-panel">
     <div id="timer-display" aria-live="off">00:00.0</div>
     <div class="timer-btns">
       <button id="timer-toggle" class="primary" type="button">Start</button>
-      <button id="timer-reset" type="button">Reset</button>
+      <button id="timer-reset" type="button" data-i18n="timer.reset">Reset</button>
     </div>
   </section>
 
   <section class="panel">
     <form id="entry-form">
-      <label id="value-label">Repetitions
+      <label id="value-label"><span data-i18n="form.reps">Repetitions</span>
         <input id="value" type="number" inputmode="numeric" min="1" step="1">
       </label>
-      <p id="time-hint" class="muted" hidden>Stop the timer, then save. The recorded time is used.</p>
-      <label>Date
+      <p id="time-hint" class="muted" hidden data-i18n="form.timeHint">Stop the timer, then save. The recorded time is used.</p>
+      <label><span data-i18n="form.date">Date</span>
         <input id="date" type="date" required>
       </label>
       <fieldset>
-        <legend>How was the execution?</legend>
+        <legend data-i18n="form.rating">How was the execution?</legend>
         <label class="smiley"><input type="radio" name="rating" value="bad">😞</label>
         <label class="smiley"><input type="radio" name="rating" value="mid" checked>😐</label>
         <label class="smiley"><input type="radio" name="rating" value="good">😊</label>
       </fieldset>
-      <button class="primary" type="submit">Save entry</button>
+      <button class="primary" type="submit" data-i18n="form.save">Save entry</button>
     </form>
   </section>
 
   <section class="panel" id="streak-panel">
     <div class="stats">
-      <div class="stat"><b id="st-cur">0</b><span>current streak</span></div>
-      <div class="stat"><b id="st-best">0</b><span>longest streak</span></div>
-      <div class="stat"><b id="st-total">0</b><span>days in total</span></div>
+      <div class="stat"><b id="st-cur">0</b><span data-i18n="streak.current">current streak</span></div>
+      <div class="stat"><b id="st-best">0</b><span data-i18n="streak.longest">longest streak</span></div>
+      <div class="stat"><b id="st-total">0</b><span data-i18n="streak.total">days in total</span></div>
     </div>
-    <div class="heat" id="heat" aria-label="Last 16 weeks"></div>
+    <div class="heat" id="heat" aria-label="Last 16 weeks" data-i18n-attr="aria-label:streak.weeks"></div>
     <div class="months" id="heat-months"></div>
-    <div class="legend"><span class="g">good</span><span class="m">ok</span><span class="b">bad</span><span>no entry</span></div>
+    <div class="legend"><span class="g" data-i18n="streak.good">good</span><span class="m" data-i18n="streak.mid">ok</span><span class="b" data-i18n="streak.bad">bad</span><span data-i18n="streak.none">no entry</span></div>
   </section>
 
   <section class="panel">
@@ -115,26 +124,26 @@
   </section>
 
   <section class="panel">
-    <h2>History</h2>
+    <h2 data-i18n="history.title">History</h2>
     <ul id="history" class="history"></ul>
   </section>
 
-  <button id="delete-ex" class="danger">Delete exercise</button>
+  <button id="delete-ex" class="danger" data-i18n="ex.delete">Delete exercise</button>
 </main>
 
 <dialog id="ex-dialog">
   <form method="dialog" id="ex-form">
-    <h2>New exercise</h2>
-    <label>Name <input id="ex-name" required maxlength="40" placeholder="e.g. Plank"></label>
-    <label>Type
+    <h2 data-i18n="ex.dialogTitle">New exercise</h2>
+    <label><span data-i18n="common.name">Name</span> <input id="ex-name" required maxlength="40" placeholder="e.g. Plank" data-i18n-attr="placeholder:ex.placeholder"></label>
+    <label><span data-i18n="ex.type">Type</span>
       <select id="ex-type">
-        <option value="time">Seconds (timer)</option>
-        <option value="reps">Repetitions</option>
+        <option value="time" data-i18n="ex.typeTime">Seconds (timer)</option>
+        <option value="reps" data-i18n="ex.typeReps">Repetitions</option>
       </select>
     </label>
     <menu>
-      <button value="cancel" formnovalidate>Cancel</button>
-      <button class="primary" value="ok">Create</button>
+      <button value="cancel" formnovalidate data-i18n="common.cancel">Cancel</button>
+      <button class="primary" value="ok" data-i18n="common.create">Create</button>
     </menu>
   </form>
 </dialog>
@@ -143,47 +152,47 @@
   <form method="dialog" id="food-form">
     <h2 id="food-dialog-title">Add food</h2>
     <div class="searchrow">
-      <input id="food-q" type="search" placeholder="Search product or barcode" autocomplete="off">
-      <button id="food-search" type="button">Search</button>
-      <button id="food-scan" type="button" hidden>Scan</button>
+      <input id="food-q" type="search" placeholder="Search product or barcode" data-i18n-attr="placeholder:food.searchPh" autocomplete="off">
+      <button id="food-search" type="button" data-i18n="food.search">Search</button>
+      <button id="food-scan" type="button" hidden data-i18n="food.scan">Scan</button>
     </div>
     <video id="scan-video" playsinline muted hidden></video>
     <ul id="food-results" class="results"></ul>
-    <label>Name <input id="food-name" required maxlength="80"></label>
+    <label><span data-i18n="common.name">Name</span> <input id="food-name" required maxlength="80"></label>
     <div class="two">
-      <label>Amount (g) <input id="food-grams" type="number" inputmode="decimal" min="0.1" step="any" value="100" required></label>
-      <label>kcal per 100 g <input id="food-kcal100" type="number" inputmode="decimal" min="0" step="any" required></label>
+      <label><span data-i18n="food.grams">Amount (g)</span> <input id="food-grams" type="number" inputmode="decimal" min="0.1" step="any" value="100" required></label>
+      <label><span data-i18n="food.kcal100">kcal per 100 g</span> <input id="food-kcal100" type="number" inputmode="decimal" min="0" step="any" required></label>
     </div>
     <p id="food-preview" class="muted"></p>
     <menu>
-      <button value="cancel" formnovalidate>Cancel</button>
-      <button class="primary" value="ok">Add</button>
+      <button value="cancel" formnovalidate data-i18n="common.cancel">Cancel</button>
+      <button class="primary" value="ok" data-i18n="common.add">Add</button>
     </menu>
   </form>
 </dialog>
 
 <dialog id="fast-dialog">
   <form method="dialog">
-    <h2>Yesterday's fasting</h2>
-    <p>How well did you keep your fasting window on <strong id="fast-day"></strong>?</p>
+    <h2 data-i18n="fast.dialogTitle">Yesterday's fasting</h2>
+    <p data-i18n-html="fast.question">How well did you keep your fasting window on <strong id="fast-day"></strong>?</p>
     <div class="rate-btns">
-      <button value="bad" aria-label="Bad">😞</button>
-      <button value="mid" aria-label="OK">😐</button>
-      <button value="good" aria-label="Good">😊</button>
+      <button value="bad" aria-label="Bad" data-i18n-attr="aria-label:rating.bad">😞</button>
+      <button value="mid" aria-label="OK" data-i18n-attr="aria-label:rating.mid">😐</button>
+      <button value="good" aria-label="Good" data-i18n-attr="aria-label:rating.good">😊</button>
     </div>
-    <menu><button value="skip">Skip</button></menu>
+    <menu><button value="skip" data-i18n="common.skip">Skip</button></menu>
   </form>
 </dialog>
 
 <dialog id="import-dialog">
   <form method="dialog">
-    <h2>Import data</h2>
+    <h2 data-i18n="imp.title">Import data</h2>
     <p id="import-summary"></p>
-    <p class="muted"><strong>Merge</strong> adds what is missing and keeps your current data. <strong>Replace</strong> deletes all current data first.</p>
+    <p class="muted" data-i18n-html="imp.explain"><strong>Merge</strong> adds what is missing and keeps your current data. <strong>Replace</strong> deletes all current data first.</p>
     <menu>
-      <button value="cancel">Cancel</button>
-      <button value="replace" class="danger-text">Replace</button>
-      <button class="primary" value="merge">Merge</button>
+      <button value="cancel" data-i18n="common.cancel">Cancel</button>
+      <button value="replace" class="danger-text" data-i18n="imp.replace">Replace</button>
+      <button class="primary" value="merge" data-i18n="imp.merge">Merge</button>
     </menu>
   </form>
 </dialog>
@@ -191,6 +200,7 @@
 <canvas id="fx"></canvas>
 <div id="msg" role="status"></div>
 
+<script src="i18n.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
