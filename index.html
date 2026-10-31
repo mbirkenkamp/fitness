@@ -84,14 +84,13 @@
   <section class="panel timer" id="timer-panel">
     <div id="timer-display" aria-live="off">00:00.0</div>
     <div class="timer-btns">
-      <button id="timer-toggle" class="primary" type="button">Start</button>
-      <button id="timer-reset" type="button" data-i18n="timer.reset">Reset</button>
+      <button id="timer-toggle" class="primary" type="button" data-i18n="timer.start">Start</button>
     </div>
   </section>
 
   <section class="panel">
     <form id="entry-form">
-      <label id="value-label"><span data-i18n="form.reps">Repetitions</span>
+      <label id="value-label"><span id="value-label-text">Repetitions</span>
         <input id="value" type="number" inputmode="numeric" min="1" step="1">
       </label>
       <p id="time-hint" class="muted" hidden data-i18n="form.timeHint">Stop the timer, then save. The recorded time is used.</p>
@@ -196,6 +195,12 @@
     </menu>
   </form>
 </dialog>
+
+<div id="timer-overlay" role="dialog" aria-modal="true" hidden>
+  <button id="ov-close" type="button" aria-label="Cancel timer" data-i18n-attr="aria-label:timer.cancel">✕</button>
+  <div id="ov-time">00:00.0</div>
+  <button id="ov-stop" type="button" data-i18n="timer.stop">Stop</button>
+</div>
 
 <canvas id="fx"></canvas>
 <div id="msg" role="status"></div>

@@ -149,3 +149,10 @@ dialog menu button.danger-text { color: var(--bad); }
 #msg .t { font-weight: 600; }
 #msg .s { color: var(--muted); font-size: .85rem; margin-top: 2px; }
 @media (prefers-reduced-motion: reduce) { #msg.on { animation: none; opacity: 1; transform: translate(-50%, -50%); } }
+
+#timer-overlay { position: fixed; inset: 0; z-index: 15; background: var(--bg); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4vh; padding: calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom)); }
+#ov-close { position: absolute; top: calc(10px + env(safe-area-inset-top)); right: 12px; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--line); background: var(--card); color: var(--muted); font-size: 1.1rem; line-height: 1; cursor: pointer; }
+#ov-time { font-size: clamp(3rem, 18vw, 6rem); font-weight: 700; font-variant-numeric: tabular-nums; transition: color .2s; }
+#ov-time.flash { color: var(--accent); }
+#ov-stop { width: min(88vw, 460px); height: min(42vh, 360px); border-radius: 28px; border: 0; background: var(--bad); color: #fff; font-size: clamp(2.2rem, 12vw, 4rem); font-weight: 800; letter-spacing: .04em; cursor: pointer; box-shadow: 0 10px 30px rgba(220, 38, 38, .35); }
+#ov-stop:active { transform: scale(.98); }

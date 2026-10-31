@@ -110,8 +110,8 @@ function renderDetail(ex) {
   const isTime = ex.type === 'time', isFasting = ex.type === 'fasting';
   $('timer-panel').hidden = !isTime;
   $('time-hint').hidden = !isTime;
-  $('value-label').hidden = isTime || isFasting;
-  $('value').required = !isTime && !isFasting;
+  $('value-label-text').textContent = t(isTime ? 'form.seconds' : 'form.reps');
+  $('value').required = !isFasting;
   $('entry-form').parentElement.hidden = isFasting;
   $('delete-ex').hidden = isFasting;
   $('fast-panel').hidden = !isFasting;
@@ -192,14 +192,8 @@ $('entry-form').addEventListener('submit', e => {
   const ex = current();
   let value;
   if (!ex) return;
-  if (ex.type === 'time') {
-    value = Math.round(timerMs() / 1000);
-    if (value < 1) return alert(t('timer.runFirst'));
-    if (timer.startedAt) return alert(t('timer.pauseFirst'));
-  } else {
-    value = parseInt($('value').value, 10);
-    if (!isFinite(value) || value < 1) return;
-  }
+  value = parseInt($('value').value, 10);
+  if (!isFinite(value) || value < 1) return;
   const before = streakStats(ex.entries).current;
   ex.entries.push({
     id: uid(), ts: Date.now(), value, date: $('date').value || today(),
@@ -806,10 +800,11 @@ const BUZZ_EVERY_MS = 30000;
 let lastBuzz = 0;
 let wakeLock = null;
 
+// The running timer is a full-screen overlay with a big Stop button; the page keeps the last result.
 function updateTimer() {
-  const ms = timerMs(), running = !!timer.startedAt;
-  $('timer-display').textContent = fmtTime(ms);
-  $('timer-toggle').textContent = t(running ? 'timer.pause' : ms ? 'timer.resume' : 'timer.start');
+  const text = fmtTime(timerMs());
+  $('timer-display').textContent = text;
+  $('ov-time').textContent = text;
 }
 
 // iOS has no vibration API, so there we fall back to a short beep and a flash of the display.
@@ -836,9 +831,10 @@ function beep() {
 function alertUser() {
   if (navigator.vibrate) { navigator.vibrate(200); return; }
   beep();
-  const el = $('timer-display');
-  el.classList.add('flash');
-  setTimeout(() => el.classList.remove('flash'), 400);
+  for (const el of [$('timer-display'), $('ov-time')]) {
+    el.classList.add('flash');
+    setTimeout(() => el.classList.remove('flash'), 400);
+  }
 }
 
 // Short alert each full 30 s while running.
@@ -869,6 +865,7 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible' && timer.startedAt) acquireWakeLock();
 });
 
+// Cancels and clears the timer, and closes the overlay.
 function stopTimer() {
   clearInterval(timer.tick);
   timer.tick = null;
@@ -876,25 +873,36 @@ function stopTimer() {
   timer.startedAt = null;
   lastBuzz = 0;
   releaseWakeLock();
+  $('timer-overlay').hidden = true;
   updateTimer();
 }
 
 $('timer-toggle').addEventListener('click', () => {
-  if (timer.startedAt) {
-    timer.elapsed = timerMs();
-    timer.startedAt = null;
-    clearInterval(timer.tick);
-    releaseWakeLock();
-  } else {
-    unlockAudio();
-    timer.startedAt = Date.now();
-    lastBuzz = Math.floor(timer.elapsed / BUZZ_EVERY_MS);
-    timer.tick = setInterval(tick, 100);
-    acquireWakeLock();
-  }
+  unlockAudio();
+  timer.elapsed = 0;
+  timer.startedAt = Date.now();
+  lastBuzz = 0;
+  timer.tick = setInterval(tick, 100);
+  acquireWakeLock();
   updateTimer();
+  $('timer-overlay').hidden = false;
+  $('ov-stop').focus();
 });
-$('timer-reset').addEventListener('click', stopTimer);
+
+// Stop: keep the measured time, put the seconds into the field and close the overlay.
+$('ov-stop').addEventListener('click', () => {
+  const ms = timerMs();
+  clearInterval(timer.tick);
+  timer.tick = null;
+  timer.elapsed = ms;
+  timer.startedAt = null;
+  releaseWakeLock();
+  $('timer-overlay').hidden = true;
+  updateTimer();
+  $('value').value = Math.max(1, Math.round(ms / 1000));
+});
+
+$('ov-close').addEventListener('click', stopTimer);
 
 document.querySelectorAll('dialog form').forEach(form => form.addEventListener('keydown', e => {
   const primary = form.querySelector('.primary');
