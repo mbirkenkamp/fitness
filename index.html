@@ -108,6 +108,19 @@
   </section>
 
   <section class="panel" id="streak-panel">
+    <div class="goal-head">
+      <span class="goal-title" data-i18n="goal.title">Weekly goal</span>
+      <select id="goal-select" aria-label="Weekly goal" data-i18n-attr="aria-label:goal.title"></select>
+    </div>
+    <div id="goal-body" hidden>
+      <div class="goal-main">
+        <div class="ring"><svg viewBox="0 0 100 100" aria-hidden="true"><circle cx="50" cy="50" r="42" class="ring-bg"/><circle cx="50" cy="50" r="42" class="ring-fg" id="ring-fg"/></svg>
+          <div class="ring-c"><div><span id="ring-num">0/0</span><small data-i18n="goal.thisWeek">this week</small></div></div></div>
+        <div class="grow"><div class="name" id="goal-line"></div><div class="sub" id="goal-sub"></div><div class="name goal-streak" id="goal-streak"></div></div>
+      </div>
+      <div class="weeks" id="goal-weeks"></div>
+      <div class="weeks-lbl"><span data-i18n="goal.ago">8 weeks ago</span><span data-i18n="goal.now">now</span></div>
+    </div>
     <div class="stats">
       <div class="stat"><b id="st-cur">0</b><span data-i18n="streak.current">current streak</span></div>
       <div class="stat"><b id="st-best">0</b><span data-i18n="streak.longest">longest streak</span></div>

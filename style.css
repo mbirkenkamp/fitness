@@ -156,3 +156,24 @@ dialog menu button.danger-text { color: var(--bad); }
 #ov-time.flash { color: var(--accent); }
 #ov-stop { width: min(88vw, 460px); height: min(42vh, 360px); border-radius: 28px; border: 0; background: var(--bad); color: #fff; font-size: clamp(2.2rem, 12vw, 4rem); font-weight: 800; letter-spacing: .04em; cursor: pointer; box-shadow: 0 10px 30px rgba(220, 38, 38, .35); }
 #ov-stop:active { transform: scale(.98); }
+
+.goal-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 4px; }
+.goal-title { font-weight: 600; }
+.goal-head select { width: auto; margin: 0; padding: 6px 8px; }
+#goal-body { margin: 10px 0 14px; padding-bottom: 14px; border-bottom: 1px solid var(--line); }
+.goal-main { display: flex; align-items: center; gap: 14px; }
+.ring { position: relative; width: 92px; height: 92px; flex: none; }
+.ring svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.ring circle { fill: none; stroke-width: 12; }
+.ring-bg { stroke: var(--line); }
+.ring-fg { stroke: var(--accent); stroke-linecap: round; stroke-dasharray: 0 264; transition: stroke-dasharray .5s, stroke .3s; }
+.ring-fg.met { stroke: var(--good); }
+.ring-c { position: absolute; inset: 0; display: grid; place-items: center; text-align: center; font-weight: 700; font-size: 1.25rem; line-height: 1.1; }
+.ring-c small { display: block; font-size: .62rem; font-weight: 400; color: var(--muted); }
+.goal-streak { margin-top: 6px; }
+.weeks { display: flex; align-items: flex-end; gap: 6px; height: 50px; margin-top: 12px; }
+.weeks div { flex: 1; min-height: 4px; border-radius: 4px 4px 0 0; background: var(--line); }
+.weeks div.met { background: var(--accent); }
+.weeks div.cur { background: repeating-linear-gradient(45deg, var(--accent), var(--accent) 4px, transparent 4px, transparent 8px); }
+.weeks div.cur.met { background: var(--good); }
+.weeks-lbl { display: flex; justify-content: space-between; font-size: .68rem; color: var(--muted); margin-top: 2px; }
