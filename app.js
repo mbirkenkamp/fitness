@@ -4,7 +4,8 @@ const STORAGE_KEY = 'fitness-tracker-v1';
 const FACES = { bad: '😞', mid: '😐', good: '😊' };
 const COLORS = { bad: '#dc2626', mid: '#d97706', good: '#16a34a' };
 const RATINGS = ['bad', 'mid', 'good'];
-const MEALS = [['breakfast', 'Breakfast'], ['lunch', 'Lunch'], ['dinner', 'Dinner'], ['snacks', 'Snacks']];
+const MEALS = ['breakfast', 'lunch', 'dinner', 'snacks'];
+const LANGS = ['auto', 'de', 'en'];
 const RATING_VALUE = { bad: 1, mid: 2, good: 3 };
 const TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/, DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -12,6 +13,10 @@ const $ = id => document.getElementById(id);
 const today = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000).toISOString().slice(0, 10);
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+const ratingLabel = r => t('rating.' + r);
+const unitLabel = u => ({ sec: t('unit.sec'), reps: t('unit.reps') }[u] || u);
+const dayName = d => new Date(2024, 0, 7 + d).toLocaleDateString(locale(), { weekday: 'short' }); // 2024-01-07 was a Sunday
 
 let state = load();
 let currentId = null;
@@ -24,10 +29,11 @@ function load() {
       migrate(data);
       data.fasting = cleanFasting(data.fasting);
       data.food = cleanFood(data.food);
+      data.lang = LANGS.includes(data.lang) ? data.lang : 'auto';
       return data;
     }
   } catch (e) { /* ignore corrupt or unavailable storage */ }
-  return { exercises: [], fasting: defaultFasting(), food: cleanFood() };
+  return { exercises: [], fasting: defaultFasting(), food: cleanFood(), lang: 'auto' };
 }
 
 // Exercises are either 'time' (stored in seconds) or 'reps'. Older data had a free-text unit.
@@ -45,13 +51,13 @@ function migrate(data) {
 
 function save() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
-  catch (e) { alert('Could not save to this device\'s storage.'); }
+  catch (e) { alert(t('err.storage')); }
 }
 
 // The fasting card opens the same detail page as an exercise, backed by state.fasting.
 const FASTING_ID = 'fasting';
 const fastingEx = () => ({
-  id: FASTING_ID, name: 'Intermittent fasting', type: 'fasting', unit: '',
+  id: FASTING_ID, get name() { return t('fast.title'); }, type: 'fasting', unit: '',
   get entries() { return state.fasting.entries; },
   set entries(v) { state.fasting.entries = v; },
 });
@@ -70,9 +76,9 @@ function render() {
   // The left button is the cog on the list and a back arrow everywhere else.
   $('icon-cog').style.display = onList ? '' : 'none';
   $('icon-back').hidden = onList;
-  $('nav').setAttribute('aria-label', onList ? 'Settings' : 'Back');
+  $('nav').setAttribute('aria-label', t(onList ? 'nav.settings' : 'nav.back'));
   $('add-ex').hidden = !onList;
-  $('title').textContent = ex ? ex.name : inFood ? 'Calories' : showSettings ? 'Settings' : 'Fitness Tracker';
+  $('title').textContent = ex ? ex.name : inFood ? t('food.card') : showSettings ? t('set.title') : t('app.title');
   applyHeader();
   if (ex) renderDetail(ex);
   else if (inFood) renderFood();
@@ -86,7 +92,7 @@ function renderList() {
     const last = sorted(ex).pop();
     return `<li data-id="${ex.id}">
       <div class="grow"><div class="name">${esc(ex.name)}</div>
-      <div class="sub">${last ? `${last.value} ${esc(ex.unit)} · ${last.date}` : 'No entries yet'} · ${ex.entries.length} total</div></div>
+      <div class="sub">${last ? `${last.value} ${esc(unitLabel(ex.unit))} · ${last.date}` : t('list.noEntries')} · ${t('list.total', { n: ex.entries.length })}</div></div>
       <div class="last">${last ? FACES[last.rating] : ''}</div></li>`;
   }).join('') + fastingCard() + foodCard();
 }
@@ -95,8 +101,8 @@ function fastingCard() {
   if (!state.fasting.enabled) return '';
   const last = sorted(fastingEx()).pop();
   return `<li data-id="${FASTING_ID}">
-    <div class="grow"><div class="name">Intermittent fasting</div>
-    <div class="sub">${esc(fastingStatus())}${last ? ` · last: ${last.date}` : ''}</div></div>
+    <div class="grow"><div class="name">${esc(t('fast.title'))}</div>
+    <div class="sub">${esc(fastingStatus())}${last ? ` · ${esc(t('fast.last', { date: last.date }))}` : ''}</div></div>
     <div class="last">${last ? FACES[last.rating] : ''}</div></li>`;
 }
 
@@ -112,19 +118,19 @@ function renderDetail(ex) {
   $('streak-panel').hidden = isFasting;
   if (!isFasting) renderStreaks(ex.entries);
   if (isFasting) $('fast-status').textContent = fastingStatus();
-  $('chart').innerHTML = chartSvg(sorted(ex), ex.unit, isFasting ? FASTING_SCALE : null);
+  $('chart').innerHTML = chartSvg(sorted(ex), unitLabel(ex.unit), isFasting ? FASTING_SCALE : null);
   const rows = sorted(ex).reverse();
   $('history').innerHTML = rows.length ? rows.map(e => `<li>
     <span class="face">${FACES[e.rating]}</span>
-    <div class="grow"><strong>${isFasting ? RATING_LABEL[e.rating] : `${e.value} ${esc(ex.unit)}`}</strong><div class="date">${e.date}</div></div>
-    <button data-del="${e.id}" aria-label="Delete entry">✕</button></li>`).join('')
-    : '<li class="muted">No entries yet.</li>';
+    <div class="grow"><strong>${isFasting ? ratingLabel(e.rating) : `${e.value} ${esc(unitLabel(ex.unit))}`}</strong><div class="date">${e.date}</div></div>
+    <button data-del="${e.id}" aria-label="${esc(t('history.deleteEntry'))}">✕</button></li>`).join('')
+    : `<li class="muted">${esc(t('history.empty'))}</li>`;
 }
 
 // `scale` pins the y axis to labelled ticks (used for the fasting ratings).
 function chartSvg(entries, unit, scale) {
   const W = 320, H = 200, L = 36, R = 12, T = 14, B = 28;
-  if (!entries.length) return `<p class="muted">${scale ? 'Your daily ratings will show up here.' : 'Add entries to see your progress.'}</p>`;
+  if (!entries.length) return `<p class="muted">${esc(t(scale ? 'fast.empty' : 'chart.empty'))}</p>`;
   const fmt = n => (max - min > 10 ? Math.round(n) : +n.toFixed(1)); // whole numbers once the range is wide
   let min, max, ticks;
   if (scale) ({ min, max, ticks } = scale);
@@ -133,11 +139,11 @@ function chartSvg(entries, unit, scale) {
     min = Math.min(...vals); max = Math.max(...vals);
     if (min === max) { min -= 1; max += 1; }
     const pad = (max - min) * 0.1; min = Math.max(0, min - pad); max += pad;
-    ticks = [0, 1, 2, 3, 4].map(i => { const v = min + (max - min) * i / 4; return { v, label: fmt(v) }; });
+    ticks = [0, 1, 2, 3, 4].map(i => { const v = min + (max - min) * i / 4; return { v, label: fmt(v).toLocaleString(locale()) }; });
   }
   const x = i => L + (entries.length === 1 ? (W - L - R) / 2 : i * (W - L - R) / (entries.length - 1));
   const y = v => T + (1 - (v - min) / (max - min)) * (H - T - B);
-  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Progress chart">`;
+  let s = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="${esc(t('chart.label'))}">`;
   for (const t of ticks) {
     const yy = y(t.v);
     s += `<line class="axis" x1="${L}" x2="${W - R}" y1="${yy}" y2="${yy}"/><text x="${L - 4}" y="${yy + 3}" text-anchor="end">${t.label}</text>`;
@@ -188,8 +194,8 @@ $('entry-form').addEventListener('submit', e => {
   if (!ex) return;
   if (ex.type === 'time') {
     value = Math.round(timerMs() / 1000);
-    if (value < 1) return alert('Run the timer first.');
-    if (timer.startedAt) return alert('Pause the timer before saving.');
+    if (value < 1) return alert(t('timer.runFirst'));
+    if (timer.startedAt) return alert(t('timer.pauseFirst'));
   } else {
     value = parseInt($('value').value, 10);
     if (!isFinite(value) || value < 1) return;
@@ -210,16 +216,14 @@ $('entry-form').addEventListener('submit', e => {
 
 $('history').addEventListener('click', e => {
   const id = e.target.dataset.del, ex = current();
-  if (!id || !ex || !confirm('Delete this entry?')) return;
+  if (!id || !ex || !confirm(t('history.confirmDelete'))) return;
   ex.entries = ex.entries.filter(x => x.id !== id);
   save(); render();
 });
 
 // ---- Intermittent fasting ----------------------------------------------------
-const RATING_LABEL = { bad: 'Bad', mid: 'OK', good: 'Good' };
 const FASTING_SCALE = { min: 0.5, max: 3.5, ticks: [1, 2, 3].map(v => ({ v, label: FACES[['bad', 'mid', 'good'][v - 1]] })) };
 const DAY_ORDER = [1, 2, 3, 4, 5, 6, 0]; // Monday first; the index is Date#getDay()
-const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const EATING_COLOR = '#15803d', FASTING_COLOR = '#b91c1c', DEFAULT_HEADER = '#0f766e';
 
 function defaultFasting() {
@@ -232,7 +236,7 @@ function defaultFasting() {
 // Tolerant for stored data; strict (throws) for imported files.
 function cleanFasting(f, strict) {
   const out = defaultFasting();
-  if (!f || typeof f !== 'object') { if (strict) throw new Error('The fasting data is invalid.'); return out; }
+  if (!f || typeof f !== 'object') { if (strict) throw new Error(t('fast.err.invalid')); return out; }
   out.enabled = f.enabled === true;
   out.since = DATE_RE.test(f.since) ? f.since : null;
   out.lastPrompted = DATE_RE.test(f.lastPrompted) ? f.lastPrompted : null;
@@ -244,7 +248,7 @@ function cleanFasting(f, strict) {
   }
   for (const e of Array.isArray(f.entries) ? f.entries : []) {
     if (!e || typeof e.id !== 'string' || !RATINGS.includes(e.rating) || !DATE_RE.test(e.date)) {
-      if (strict) throw new Error('The fasting data contains an invalid entry.');
+      if (strict) throw new Error(t('fast.err.entry'));
       continue;
     }
     out.entries.push({ id: e.id, ts: Number(e.ts) || 0, value: RATING_VALUE[e.rating], date: e.date, rating: e.rating });
@@ -268,8 +272,8 @@ function fastingNow(now = new Date()) {
 function fastingStatus() {
   const st = fastingNow();
   if (!st) return '';
-  if (!st.day.fast) return 'No fasting today';
-  return `${st.fasting ? 'Fasting' : 'Eating'} · window ${st.day.from}–${st.day.to}`;
+  if (!st.day.fast) return t('fast.noFastingToday');
+  return `${t(st.fasting ? 'fast.fasting' : 'fast.eating')} · ${t('fast.window', { from: st.day.from, to: st.day.to })}`;
 }
 
 // Green header while eating, red while fasting, the normal colour when fasting is off.
@@ -289,9 +293,9 @@ function renderSettings() {
   $('fast-schedule').innerHTML = DAY_ORDER.map(d => {
     const s = f.schedule[d];
     const times = s.fast
-      ? `<input type="time" data-day="${d}" data-k="from" value="${s.from}" aria-label="${DAY_NAMES[d]} eating from"> – <input type="time" data-day="${d}" data-k="to" value="${s.to}" aria-label="${DAY_NAMES[d]} eating until">`
-      : '<span class="muted">no fasting</span>';
-    return `<div class="day"><label class="chk"><input type="checkbox" data-day="${d}" data-k="fast"${s.fast ? ' checked' : ''}> ${DAY_NAMES[d]}</label><span class="times">${times}</span></div>`;
+      ? `<input type="time" data-day="${d}" data-k="from" value="${s.from}" aria-label="${esc(t('fast.eatFrom', { day: dayName(d) }))}"> – <input type="time" data-day="${d}" data-k="to" value="${s.to}" aria-label="${esc(t('fast.eatUntil', { day: dayName(d) }))}">`
+      : `<span class="muted">${esc(t('fast.noFasting'))}</span>`;
+    return `<div class="day"><label class="chk"><input type="checkbox" data-day="${d}" data-k="fast"${s.fast ? ' checked' : ''}> ${esc(dayName(d))}</label><span class="times">${times}</span></div>`;
   }).join('');
 }
 
@@ -326,7 +330,7 @@ function maybeAskYesterday() {
   if (f.lastPrompted === tDate || (f.since && yDate < f.since)) return;
   if (!f.schedule[y.getDay()].fast || f.entries.some(e => e.date === yDate)) return;
   askedFor = yDate;
-  $('fast-day').textContent = y.toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+  $('fast-day').textContent = y.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
   $('fast-dialog').returnValue = '';
   $('fast-dialog').showModal();
 }
@@ -364,13 +368,13 @@ const sumKcal = items => items.reduce((n, i) => n + i.kcal, 0);
 // Tolerant for stored data; strict (throws) for imported files.
 function cleanFood(f, strict) {
   const out = { enabled: false, items: [] };
-  if (!f || typeof f !== 'object') { if (strict) throw new Error('The calorie data is invalid.'); return out; }
+  if (!f || typeof f !== 'object') { if (strict) throw new Error(t('food.err.invalid')); return out; }
   out.enabled = f.enabled === true;
   for (const i of Array.isArray(f.items) ? f.items : []) {
     const ok = i && typeof i.id === 'string' && typeof i.name === 'string' && i.name.trim() && DATE_RE.test(i.date)
-      && MEALS.some(m => m[0] === i.meal) && typeof i.kcal === 'number' && isFinite(i.kcal) && i.kcal >= 0;
+      && MEALS.includes(i.meal) && typeof i.kcal === 'number' && isFinite(i.kcal) && i.kcal >= 0;
     if (!ok) {
-      if (strict) throw new Error('The calorie data contains an invalid item.');
+      if (strict) throw new Error(t('food.err.item'));
       continue;
     }
     out.items.push({ id: i.id, ts: Number(i.ts) || 0, date: i.date, meal: i.meal, name: i.name.trim().slice(0, 80),
@@ -382,16 +386,16 @@ function cleanFood(f, strict) {
 function foodCard() {
   if (!state.food.enabled) return '';
   return `<li data-id="${FOOD_ID}">
-    <div class="grow"><div class="name">Calories <span class="badge">beta</span></div>
-    <div class="sub">Today: ${sumKcal(dayItems(today()))} kcal</div></div>
+    <div class="grow"><div class="name">${esc(t('food.card'))} <span class="badge">beta</span></div>
+    <div class="sub">${esc(t('food.today', { kcal: sumKcal(dayItems(today())) }))}</div></div>
     <div class="last">🍽️</div></li>`;
 }
 
 function dayLabel(date) {
-  const t = today(), y = dateStr(new Date(Date.now() - 86400000));
-  if (date === t) return 'Today';
-  if (date === y) return 'Yesterday';
-  return new Date(date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const y = dateStr(new Date(Date.now() - 86400000));
+  if (date === today()) return t('day.today');
+  if (date === y) return t('day.yesterday');
+  return new Date(date + 'T12:00:00').toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
 }
 
 function renderFood() {
@@ -399,13 +403,14 @@ function renderFood() {
   $('food-date').textContent = dayLabel(foodDate);
   $('food-next').disabled = foodDate >= today();
   $('food-total').innerHTML = `${sumKcal(items)} <small>kcal</small>`;
-  $('meals').innerHTML = MEALS.map(([id, label]) => {
+  $('meals').innerHTML = MEALS.map(id => {
+    const label = t('meal.' + id);
     const list = items.filter(i => i.meal === id).sort((a, b) => a.ts - b.ts);
     return `<section class="panel"><div class="meal-head"><h2>${label}</h2><span class="sum">${sumKcal(list)} kcal</span>
-      <button type="button" data-add="${id}" aria-label="Add food to ${label}">＋</button></div>
+      <button type="button" data-add="${id}" aria-label="${esc(t('food.addTo', { meal: label }))}">＋</button></div>
       <ul class="items">${list.map(i => `<li><div class="grow"><div>${esc(i.name)}</div>
         <div class="sub">${i.grams ? `${+i.grams.toFixed(1)} g · ` : ''}${i.kcal} kcal</div></div>
-        <button type="button" data-del-food="${i.id}" aria-label="Delete">✕</button></li>`).join('')}</ul></section>`;
+        <button type="button" data-del-food="${i.id}" aria-label="${esc(t('common.delete'))}">✕</button></li>`).join('')}</ul></section>`;
   }).join('');
   const totals = {};
   for (const i of state.food.items) totals[i.date] = (totals[i.date] || 0) + i.kcal;
@@ -432,7 +437,7 @@ $('food-enabled').addEventListener('change', e => {
 $('meals').addEventListener('click', e => {
   const add = e.target.closest('[data-add]'), del = e.target.closest('[data-del-food]');
   if (add) openFoodDialog(add.dataset.add);
-  else if (del && confirm('Delete this item?')) {
+  else if (del && confirm(t('food.confirmDelete'))) {
     state.food.items = state.food.items.filter(i => i.id !== del.dataset.delFood);
     save(); renderFood();
   }
@@ -441,7 +446,7 @@ $('meals').addEventListener('click', e => {
 // -- add-food dialog
 function openFoodDialog(meal) {
   foodMeal = meal;
-  $('food-dialog-title').textContent = `Add to ${MEALS.find(m => m[0] === meal)[1]}`;
+  $('food-dialog-title').textContent = t('food.dialogTitle', { meal: t('meal.' + meal) });
   $('food-form').reset();
   $('food-results').innerHTML = '';
   $('food-scan').hidden = !('BarcodeDetector' in window && navigator.mediaDevices);
@@ -486,13 +491,13 @@ let foundProducts = [];
 function showResults(products, note) {
   foundProducts = products;
   $('food-results').innerHTML = note ? `<li class="note">${esc(note)}</li>` : products.map((p, i) =>
-    `<li tabindex="0" data-i="${i}">${esc(p.name)}<div class="sub">${p.kcal100 === null ? 'no calorie data' : `${p.kcal100} kcal / 100 g`}</div></li>`).join('');
+    `<li tabindex="0" data-i="${i}">${esc(p.name)}<div class="sub">${esc(p.kcal100 === null ? t('food.noData') : t('food.per100', { kcal: p.kcal100 }))}</div></li>`).join('');
 }
 
 async function searchFood() {
   const q = $('food-q').value.trim();
   if (!q) return;
-  showResults([], 'Searching…');
+  showResults([], t('food.searching'));
   try {
     let products;
     if (/^\d{8,14}$/.test(q)) {
@@ -502,9 +507,9 @@ async function searchFood() {
       const data = await offFetch(`${OFF}/cgi/search.pl?search_terms=${encodeURIComponent(q)}&search_simple=1&action=process&json=1&page_size=12&fields=${FIELDS}`);
       products = (data.products || []).map(toProduct).filter(p => p.name);
     }
-    showResults(products, products.length ? '' : 'Nothing found. You can enter the food by hand below.');
+    showResults(products, products.length ? '' : t('food.none'));
   } catch (e) {
-    showResults([], 'Could not reach Open Food Facts. You can enter the food by hand below.');
+    showResults([], t('food.offline'));
   }
 }
 
@@ -556,7 +561,7 @@ $('food-scan').addEventListener('click', async () => {
     }
   } catch (e) {
     stopScan();
-    showResults([], 'Could not use the camera. You can type the barcode instead.');
+    showResults([], t('food.camera'));
   }
 });
 
@@ -572,8 +577,8 @@ $('food-dialog').addEventListener('close', () => {
 // ---- Streaks and milestones --------------------------------------------------
 // A day counts when the exercise was logged at least once; one missed day breaks the streak.
 const MILESTONES = [
-  { days: 7, title: 'One week!', n: 20 }, { days: 14, title: 'Two weeks!', n: 30 }, { days: 30, title: 'One month!', n: 43 },
-  { days: 90, title: 'Three months!', n: 63 }, { days: 180, title: 'Half a year!', n: 87 }, { days: 365, title: 'One year!', n: 120 },
+  { days: 7, n: 20 }, { days: 14, n: 30 }, { days: 30, n: 43 },
+  { days: 90, n: 63 }, { days: 180, n: 87 }, { days: 365, n: 120 },
 ];
 const dayNum = d => Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10)) / 864e5);
 
@@ -613,7 +618,7 @@ function renderStreaks(entries) {
     const d = new Date(start);
     d.setDate(start.getDate() + i);
     const ds = dateStr(d), day = byDay[ds];
-    if (i % 7 === 0 && d.getMonth() !== lastMonth) { months.push({ col: i / 7, label: d.toLocaleDateString(undefined, { month: 'short' }) }); lastMonth = d.getMonth(); }
+    if (i % 7 === 0 && d.getMonth() !== lastMonth) { months.push({ col: i / 7, label: d.toLocaleDateString(locale(), { month: 'short' }) }); lastMonth = d.getMonth(); }
     const cls = [day ? day.best : '', ds > t ? 'future' : '', ds === t ? 'today' : ''].filter(Boolean).join(' ');
     cells += `<i class="${cls}" title="${ds}${day ? ` · ${FACES[day.best]}` : ''}"></i>`;
   }
@@ -638,7 +643,7 @@ function stopCelebration() {
 function celebrate(m, exName) {
   stopCelebration();
   const msg = $('msg');
-  msg.innerHTML = `<div class="e">🔥</div><div class="num">${m.days}</div><div class="t">days in a row – ${m.title}</div><div class="s">${esc(exName)}</div>`;
+  msg.innerHTML = `<div class="e">🔥</div><div class="num">${m.days}</div><div class="t">${esc(t('ms.line', { title: t('ms.' + m.days) }))}</div><div class="s">${esc(exName)}</div>`;
   msg.className = '';
   void msg.offsetWidth; // restart the pop-in animation
   msg.className = 'on';
@@ -689,7 +694,7 @@ $('export-btn').addEventListener('click', async () => {
   const file = new File([exportJson()], `fitness-backup-${today()}.json`, { type: 'application/json' });
   // The share sheet is the easy way out of an installed iOS PWA; elsewhere just download.
   if (navigator.canShare && navigator.canShare({ files: [file] })) {
-    try { await navigator.share({ files: [file], title: 'Fitness backup' }); return; }
+    try { await navigator.share({ files: [file], title: t('backup.shareTitle') }); return; }
     catch (e) { if (e.name === 'AbortError') return; }
   }
   const url = URL.createObjectURL(file);
@@ -703,17 +708,17 @@ $('export-btn').addEventListener('click', async () => {
 // Returns a clean copy of the imported data ({ exercises, fasting }) or throws with a readable message.
 function parseImport(text) {
   let data;
-  try { data = JSON.parse(text); } catch (e) { throw new Error('This is not a valid JSON file.'); }
-  if (!data || data.app !== 'fitness-tracker' || !Array.isArray(data.exercises)) throw new Error('This file is not a fitness backup.');
-  if (data.version > EXPORT_VERSION) throw new Error('This backup was made by a newer version of the app. Please update first.');
+  try { data = JSON.parse(text); } catch (e) { throw new Error(t('imp.err.json')); }
+  if (!data || data.app !== 'fitness-tracker' || !Array.isArray(data.exercises)) throw new Error(t('imp.err.notBackup'));
+  if (data.version > EXPORT_VERSION) throw new Error(t('imp.err.newer'));
   const exercises = migrate({ exercises: data.exercises.map((ex, i) => {
-    const where = `Exercise ${i + 1}`;
-    if (!ex || typeof ex.id !== 'string' || typeof ex.name !== 'string' || !ex.name.trim()) throw new Error(`${where} is invalid.`);
-    if (ex.type !== undefined && ex.type !== 'time' && ex.type !== 'reps') throw new Error(`${where} has an unknown type.`);
-    if (!Array.isArray(ex.entries)) throw new Error(`${where} has no entries list.`);
+    const where = t('imp.exercise', { n: i + 1 });
+    if (!ex || typeof ex.id !== 'string' || typeof ex.name !== 'string' || !ex.name.trim()) throw new Error(t('imp.err.invalid', { where }));
+    if (ex.type !== undefined && ex.type !== 'time' && ex.type !== 'reps') throw new Error(t('imp.err.type', { where }));
+    if (!Array.isArray(ex.entries)) throw new Error(t('imp.err.entries', { where }));
     const entries = ex.entries.map(e => {
       if (!e || typeof e.id !== 'string' || !isFinite(e.value) || !RATINGS.includes(e.rating) || !/^\d{4}-\d{2}-\d{2}$/.test(e.date))
-        throw new Error(`${where} ("${ex.name}") contains an invalid entry.`);
+        throw new Error(t('imp.err.entry', { where, name: ex.name }));
       return { id: e.id, ts: Number(e.ts) || 0, value: Number(e.value), date: e.date, rating: e.rating };
     });
     return { id: ex.id, name: ex.name.trim().slice(0, 40), type: ex.type, unit: ex.unit || '', entries };
@@ -757,7 +762,8 @@ $('import-file').addEventListener('change', async () => {
   } catch (e) { return alert(e.message); }
   const { exercises, fasting, food } = pendingImport;
   const n = exercises.reduce((sum, ex) => sum + ex.entries.length, 0);
-  $('import-summary').textContent = `${exercises.length} exercise(s) with ${n} entries found` + (fasting ? `, ${fasting.entries.length} fasting rating(s)` : '') + (food ? `, ${food.items.length} food item(s)` : '') + '.';
+  $('import-summary').textContent = t('imp.found', { ex: exercises.length, n })
+    + (fasting ? t('imp.foundFasting', { n: fasting.entries.length }) : '') + (food ? t('imp.foundFood', { n: food.items.length }) : '');
   $('import-dialog').returnValue = '';
   $('import-dialog').showModal();
 });
@@ -770,17 +776,17 @@ $('import-dialog').addEventListener('close', () => {
     state.exercises = incoming.exercises;
     if (incoming.fasting) state.fasting = incoming.fasting;
     if (incoming.food) state.food = incoming.food;
-    alert(`Imported ${incoming.exercises.length} exercise(s).`);
+    alert(t('imp.doneReplace', { n: incoming.exercises.length }));
   } else {
     const { addedEx, addedEntries } = mergeExercises(incoming);
-    alert(`Added ${addedEx} exercise(s) and ${addedEntries} entries.`);
+    alert(t('imp.doneMerge', { ex: addedEx, n: addedEntries }));
   }
   save(); render();
 });
 
 $('delete-ex').addEventListener('click', () => {
   const ex = current();
-  if (!ex || !confirm(`Delete "${ex.name}" and all its history?`)) return;
+  if (!ex || !confirm(t('ex.confirmDelete', { name: ex.name }))) return;
   state.exercises = state.exercises.filter(x => x.id !== ex.id);
   stopTimer();
   currentId = null;
@@ -803,7 +809,7 @@ let wakeLock = null;
 function updateTimer() {
   const ms = timerMs(), running = !!timer.startedAt;
   $('timer-display').textContent = fmtTime(ms);
-  $('timer-toggle').textContent = running ? 'Pause' : ms ? 'Resume' : 'Start';
+  $('timer-toggle').textContent = t(running ? 'timer.pause' : ms ? 'timer.resume' : 'timer.start');
 }
 
 // iOS has no vibration API, so there we fall back to a short beep and a flash of the display.
@@ -897,7 +903,21 @@ document.querySelectorAll('dialog form').forEach(form => form.addEventListener('
   form.requestSubmit(primary);
 }));
 
-render();
+function applyLanguage() {
+  setLang(state.lang === 'auto' ? detectLang() : state.lang);
+  applyStatic();
+  $('lang-select').value = state.lang;
+  updateTimer();
+  render();
+}
+$('lang-select').addEventListener('change', e => {
+  state.lang = LANGS.includes(e.target.value) ? e.target.value : 'auto';
+  save();
+  applyLanguage();
+});
+addEventListener('languagechange', () => { if (state.lang === 'auto') applyLanguage(); });
+
+applyLanguage();
 maybeAskYesterday();
 
 if ('serviceWorker' in navigator) {
