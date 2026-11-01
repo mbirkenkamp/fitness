@@ -42,12 +42,6 @@
     <p id="fast-hint" class="muted small" hidden data-i18n="fast.hint">Set your eating window for each weekday. The header is green while you may eat and red while you fast. Outside the window counts as fasting, and a window over midnight (e.g. 20:00–02:00) works too. When you open the app you are asked how yesterday went.</p>
   </section>
 
-  <section class="panel">
-    <h2><span data-i18n="food.title">Calorie tracking</span> <span class="badge">beta</span></h2>
-    <label class="toggle"><input type="checkbox" id="food-enabled"> <span data-i18n="food.enable">Enable calorie tracking</span></label>
-    <p class="muted small" data-i18n="food.hint">Log food for breakfast, lunch, dinner and snacks. Product and barcode search uses the free Open Food Facts database; the text you search for is sent to openfoodfacts.org. Everything you log stays on this device.</p>
-  </section>
-
   <section class="panel data-panel">
     <h2 data-i18n="backup.title">Backup</h2>
     <p class="muted" data-i18n="backup.text">Your history only lives on this device. Export it now and then.</p>
@@ -56,22 +50,6 @@
       <button id="import-btn" type="button" data-i18n="backup.import">Import</button>
     </div>
     <input id="import-file" type="file" accept="application/json,.json" hidden>
-  </section>
-</main>
-
-<main id="food-view" hidden>
-  <section class="panel">
-    <div class="datebar">
-      <button id="food-prev" type="button" aria-label="Previous day" data-i18n-attr="aria-label:food.prevDay">‹</button>
-      <strong id="food-date"></strong>
-      <button id="food-next" type="button" aria-label="Next day" data-i18n-attr="aria-label:food.nextDay">›</button>
-    </div>
-    <div id="food-total"></div>
-  </section>
-  <div id="meals"></div>
-  <section class="panel">
-    <h2 data-i18n="food.perDay">Calories per day</h2>
-    <div id="food-chart"></div>
   </section>
 </main>
 
@@ -160,29 +138,6 @@
   </form>
 </dialog>
 
-<dialog id="food-dialog">
-  <form method="dialog" id="food-form">
-    <h2 id="food-dialog-title">Add food</h2>
-    <div class="searchrow">
-      <input id="food-q" type="search" placeholder="Search product or barcode" data-i18n-attr="placeholder:food.searchPh" autocomplete="off">
-      <button id="food-search" type="button" data-i18n="food.search">Search</button>
-      <button id="food-scan" type="button" hidden data-i18n="food.scan">Scan</button>
-    </div>
-    <video id="scan-video" playsinline muted hidden></video>
-    <ul id="food-results" class="results"></ul>
-    <label><span data-i18n="common.name">Name</span> <input id="food-name" required maxlength="80"></label>
-    <div class="two">
-      <label><span data-i18n="food.grams">Amount (g)</span> <input id="food-grams" type="number" inputmode="decimal" min="0.1" step="any" value="100" required></label>
-      <label><span data-i18n="food.kcal100">kcal per 100 g</span> <input id="food-kcal100" type="number" inputmode="decimal" min="0" step="any" required></label>
-    </div>
-    <p id="food-preview" class="muted"></p>
-    <menu>
-      <button value="cancel" formnovalidate data-i18n="common.cancel">Cancel</button>
-      <button class="primary" value="ok" data-i18n="common.add">Add</button>
-    </menu>
-  </form>
-</dialog>
-
 <dialog id="fast-dialog">
   <form method="dialog">
     <h2 data-i18n="fast.dialogTitle">Yesterday's fasting</h2>
@@ -217,6 +172,7 @@
 
 <canvas id="fx"></canvas>
 <div id="msg" role="status"></div>
+<div id="toast" role="status" aria-live="polite"></div>
 
 <script src="i18n.js"></script>
 <script src="app.js"></script>
