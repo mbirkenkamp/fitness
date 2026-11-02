@@ -1,10 +1,12 @@
 # Fitness Tracker (PWA)
 
+**[▶ Open the app: https://mbirkenkamp.github.io/fitness/](https://mbirkenkamp.github.io/fitness/)**
+
 A simple fitness tracker that runs in the browser and can be installed like an app. No account, no build step, no dependencies.
 
 ## Use it
 
-**It is available through GitHub Pages: https://mbirkenkamp.github.io/fitness/**
+**It is available through GitHub Pages: [https://mbirkenkamp.github.io/fitness/](https://mbirkenkamp.github.io/fitness/)**
 
 Open the link on your phone or computer. To install it, use "Add to Home Screen" (iPhone: Share menu in Safari; Android: Chrome menu → "Install app"). After the first visit it also works offline, and it updates itself when you open it with a connection.
 
