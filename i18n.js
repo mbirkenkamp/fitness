@@ -67,6 +67,8 @@ const I18N = {
     'ex.confirmDelete': 'Delete "{name}" and all its history?',
     'list.noEntries': 'No entries yet',
     'list.total': '{n} total',
+    'list.doneToday': 'Done today',
+    'list.notDoneToday': 'Not done today',
     'chart.empty': 'Add entries to see your progress.',
     'chart.label': 'Progress chart',
 
@@ -186,6 +188,8 @@ const I18N = {
     'ex.confirmDelete': '„{name}“ und den gesamten Verlauf löschen?',
     'list.noEntries': 'Noch keine Einträge',
     'list.total': '{n} gesamt',
+    'list.doneToday': 'Heute gemacht',
+    'list.notDoneToday': 'Heute noch nicht gemacht',
     'chart.empty': 'Trage Einträge ein, um deinen Fortschritt zu sehen.',
     'chart.label': 'Fortschrittsdiagramm',
 
