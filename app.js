@@ -85,12 +85,13 @@ function render() {
 
 function renderList() {
   $('empty').hidden = state.exercises.length > 0 || state.fasting.enabled;
+  const day = today();
   $('exercises').innerHTML = state.exercises.map(ex => {
-    const last = sorted(ex).pop();
+    const last = sorted(ex).pop(), done = ex.entries.some(e => e.date === day);
     return `<li data-id="${ex.id}">
       <div class="grow"><div class="name">${esc(ex.name)}</div>
       <div class="sub">${last ? `${last.value} ${esc(unitLabel(ex.unit))} · ${last.date}` : t('list.noEntries')} · ${t('list.total', { n: ex.entries.length })}</div></div>
-      <div class="last">${last ? FACES[last.rating] : ''}</div></li>`;
+      <div class="check${done ? ' done' : ''}" role="img" aria-label="${esc(t(done ? 'list.doneToday' : 'list.notDoneToday'))}">${done ? '✓' : ''}</div></li>`;
   }).join('') + fastingCard();
 }
 
